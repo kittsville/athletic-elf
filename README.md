@@ -1,4 +1,4 @@
-# Strava Webhooks
+# Athletic Elf
 
 A Flask app that receives [Strava webhook events](https://developers.strava.com/docs/webhooks/), fetches activity details via the Strava API, and stores them in a Postgres database.
 
