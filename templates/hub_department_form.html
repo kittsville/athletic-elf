@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>Hub and Department</title>
+  {% if config.APP_FAVICON %}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
+  {% endif %}
   <style>
     body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
     label { display: block; font-weight: 600; margin-top: 1rem; }
@@ -12,7 +15,7 @@
   </style>
 </head>
 <body>
-  <h1>Athletic Elf</h1>
+  <h1>{{ config.APP_NAME }}</h1>
   <p>Please select your Hub and Department</p>
   <form method="post" action="{{ url_for('main.hub_department_form') }}">
     <label for="hub">Hub</label>

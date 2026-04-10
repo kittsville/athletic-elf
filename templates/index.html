@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>Home</title>
+  {% if config.APP_FAVICON %}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
+  {% endif %}
   <style>
     body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
     dl { margin: 1rem 0; }
@@ -23,7 +26,7 @@
   </style>
 </head>
 <body>
-  <h1>Athletic Elf</h1>
+  <h1>{{ config.APP_NAME }}</h1>
   {% if logged_in %}
     <p>You are signed in with Strava.</p>
     <dl>

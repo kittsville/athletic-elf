@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>Results</title>
+  {% if config.APP_FAVICON %}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
+  {% endif %}
   <style>
     body { font-family: system-ui, sans-serif; margin: 2rem; }
     table { border-collapse: collapse; }
