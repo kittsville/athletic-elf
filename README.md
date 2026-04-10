@@ -1,5 +1,7 @@
 # Athletic Elf
 
+[![Tests on main](https://github.com/kittsville/athletic-elf/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/kittsville/athletic-elf/actions/workflows/tests.yml?query=branch%3Amain)
+
 A Flask app that receives [Strava webhook events](https://developers.strava.com/docs/webhooks/), fetches activity details via the Strava API, and stores them in a Postgres database. Athletes connect with [OAuth 2.0](https://developers.strava.com/docs/getting-started/#oauth); access and refresh tokens are stored per athlete.
 
 ## How it works
