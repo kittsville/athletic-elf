@@ -1,20 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Hub and Department</title>
-  {% if config.APP_FAVICON %}
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
-  {% endif %}
+{% extends "base.html" %}
+{% block title %}Hub and Department{% endblock %}
+{% block extra_head %}
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
     label { display: block; font-weight: 600; margin-top: 1rem; }
     select { font: inherit; min-width: 16rem; padding: 0.35rem 0.5rem; }
     button { font: inherit; padding: 0.4rem 0.75rem; cursor: pointer; margin-top: 1.25rem; }
     a { color: #06c; }
   </style>
-</head>
-<body>
+{% endblock %}
+{% block content %}
   <h1>{{ config.APP_NAME }}</h1>
   <p>Please select your Hub and Department</p>
   <form method="post" action="{{ url_for('main.hub_department_form') }}">
@@ -36,5 +30,4 @@
       <button type="submit">Submit</button>
     </div>
   </form>
-</body>
-</html>
+{% endblock %}

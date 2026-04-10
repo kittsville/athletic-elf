@@ -48,7 +48,36 @@ def _points_by_athlete_strava_id() -> dict[int, int]:
     }
 
 
-def _can_perform_atheletes_updates(athlete: Athelete) -> bool:
+def _summaries_by_hub_and_department(
+    points_by: dict[int, int],
+    hub_options: list[str],
+    department_options: list[str],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Total points per configured hub and department (0 if no athletes or no scored activities)."""
+    hub_set = frozenset(hub_options)
+    dept_set = frozenset(department_options)
+    hub_totals: defaultdict[str, int] = defaultdict(int)
+    dept_totals: defaultdict[str, int] = defaultdict(int)
+    athletes = Athelete.query.options(
+        load_only(Athelete.athlete_id, Athelete.hub, Athelete.department)
+    ).all()
+    for a in athletes:
+        aid = int(a.athlete_id)
+        pts = points_by.get(aid, 0)
+        h = (a.hub or "").strip()
+        if h in hub_set:
+            hub_totals[h] += pts
+        d = (a.department or "").strip()
+        if d in dept_set:
+            dept_totals[d] += pts
+    hub_rows = [{"name": h, "points": hub_totals.get(h, 0)} for h in hub_options]
+    dept_rows = [{"name": d, "points": dept_totals.get(d, 0)} for d in department_options]
+    hub_rows.sort(key=lambda r: (-int(r["points"]), str(r["name"])))
+    dept_rows.sort(key=lambda r: (-int(r["points"]), str(r["name"])))
+    return hub_rows, dept_rows
+
+
+def _can_perform_organiser_tasks(athlete: Athelete) -> bool:
     if athlete.is_organiser:
         return True
     return int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
@@ -163,32 +192,46 @@ def cron():
 
 @bp.get("/results")
 def results():
+    athlete = g.current_athlete
+    show_athlete_points = _can_perform_organiser_tasks(athlete)
     points_by = _points_by_athlete_strava_id()
-    rows = []
-    for athlete_id, pts in points_by.items():
-        athelete = Athelete.query.filter_by(athlete_id=athlete_id).first()
-        if athelete:
-            fn = athelete.firstname or ""
-            ln = athelete.lastname or ""
-        else:
-            fn, ln = "", ""
-        rows.append(
-            {
-                "firstname": fn,
-                "lastname": ln,
-                "athlete_id": athlete_id,
-                "points": pts,
-            }
-        )
+    hubs = current_app.config["HUB_OPTIONS"]
+    departments = current_app.config["DEPARTMENT_OPTIONS"]
+    hub_summary, department_summary = _summaries_by_hub_and_department(
+        points_by, hubs, departments
+    )
+    rows: list[dict[str, object]] = []
+    if show_athlete_points:
+        for athlete_id, pts in points_by.items():
+            athelete = Athelete.query.filter_by(athlete_id=athlete_id).first()
+            if athelete:
+                fn = athelete.firstname or ""
+                ln = athelete.lastname or ""
+            else:
+                fn, ln = "", ""
+            rows.append(
+                {
+                    "firstname": fn,
+                    "lastname": ln,
+                    "athlete_id": athlete_id,
+                    "points": pts,
+                }
+            )
 
-    rows.sort(key=lambda r: (-r["points"], r["athlete_id"]))
-    return render_template("results.html", rows=rows)
+        rows.sort(key=lambda r: (-r["points"], r["athlete_id"]))
+    return render_template(
+        "results.html",
+        rows=rows,
+        show_athlete_points=show_athlete_points,
+        hub_summary=hub_summary,
+        department_summary=department_summary,
+    )
 
 
 @bp.get("/atheletes")
 def atheletes():
     athlete = g.current_athlete
-    if not _can_perform_atheletes_updates(athlete):
+    if not _can_perform_organiser_tasks(athlete):
         abort(403)
     atheletes = (
         Athelete.query.options(
@@ -226,7 +269,7 @@ def atheletes():
 @bp.post("/atheletes/<int:athelete_pk>/make-organiser")
 def atheletes_make_organiser(athelete_pk: int):
     actor = g.current_athlete
-    if not _can_perform_atheletes_updates(actor):
+    if not _can_perform_organiser_tasks(actor):
         abort(403)
     target = db.session.get(Athelete, athelete_pk)
     if target is None:

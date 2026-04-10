@@ -1,13 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Home</title>
-  {% if config.APP_FAVICON %}
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
-  {% endif %}
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block extra_head %}
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
     dl { margin: 1rem 0; }
     dt { font-weight: 600; }
     dd { margin: 0.25rem 0 1rem 0; }
@@ -24,8 +18,8 @@
     table.activities tbody tr:hover { background: #fafafa; }
     .muted { color: #555; font-size: 0.9rem; }
   </style>
-</head>
-<body>
+{% endblock %}
+{% block content %}
   <h1>{{ config.APP_NAME }}</h1>
   {% if logged_in %}
     <p>You are signed in with Strava.</p>
@@ -104,5 +98,4 @@
     <p>You are not signed in.</p>
     <p><a href="{{ url_for('oauth.oauth_start') }}">Connect with Strava</a></p>
   {% endif %}
-</body>
-</html>
+{% endblock %}

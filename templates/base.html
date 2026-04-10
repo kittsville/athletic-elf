@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{{ config.APP_NAME }}{% endblock %}</title>
+  {% if config.APP_FAVICON %}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
+  {% endif %}
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.5; }
+    .dev-banner {
+      background: #fff3cd;
+      color: #664d03;
+      padding: 0.65rem 1rem;
+      text-align: center;
+      border-bottom: 1px solid #e6d89c;
+      font-size: 0.95rem;
+    }
+    main.page { margin: 2rem; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="dev-banner" role="status">App under development. Scores reset when competition begins</div>
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

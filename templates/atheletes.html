@@ -1,13 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>All athletes</title>
-  {% if config.APP_FAVICON %}
-  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
-  {% endif %}
+{% extends "base.html" %}
+{% block title %}All athletes{% endblock %}
+{% block extra_head %}
   <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
     a { color: #06c; }
     button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
     table { border-collapse: collapse; width: 100%; max-width: 64rem; font-size: 0.95rem; }
@@ -16,8 +10,8 @@
     tbody tr:hover { background: #fafafa; }
     .muted { color: #555; font-size: 0.9rem; }
   </style>
-</head>
-<body>
+{% endblock %}
+{% block content %}
   <p><a href="{{ url_for('main.index') }}">← Home</a></p>
   <h1>All athletes</h1>
   <table>
@@ -58,5 +52,4 @@
     {% endfor %}
     </tbody>
   </table>
-</body>
-</html>
+{% endblock %}
