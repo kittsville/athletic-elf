@@ -15,6 +15,7 @@ from flask import (
     render_template,
     request,
     session,
+    url_for,
 )
 from flask_sqlalchemy import SQLAlchemy
 
@@ -50,6 +51,23 @@ OAUTH_SCOPES = "read,activity:read,profile:read_all"
 
 SESSION_COOKIE_NAME = "elf_session"
 SESSION_TTL = timedelta(hours=48)
+
+
+def _parse_app_developer_ids() -> frozenset[int]:
+    raw = os.getenv("APP_DEVELOPER_IDS", "") or ""
+    ids: set[int] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            ids.add(int(part))
+        except ValueError:
+            continue
+    return frozenset(ids)
+
+
+APP_DEVELOPER_IDS = _parse_app_developer_ids()
 
 
 def _domain_base() -> str:
@@ -128,6 +146,22 @@ def _create_browser_session(athelete_pk: int) -> tuple[str, datetime]:
         )
     )
     return raw, expires_at
+
+
+def _current_athlete_from_request() -> Athelete | None:
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        return None
+    h = _hash_session_token(token)
+    now = datetime.now(timezone.utc)
+    bs = (
+        BrowserSession.query.filter_by(hash=h)
+        .filter(BrowserSession.expires_at > now)
+        .first()
+    )
+    if bs is None:
+        return None
+    return db.session.get(Athelete, bs.athelete_id)
 
 
 with app.app_context():
@@ -277,6 +311,44 @@ def webhook_post():
             db.session.commit()
 
     return "EVENT_RECEIVED", 200
+
+
+@app.get("/")
+def index():
+    athlete = _current_athlete_from_request()
+    if athlete is None:
+        return render_template("index.html", logged_in=False)
+    strava_id = int(athlete.athlete_id)
+    name = _athlete_display_name(athlete.firstname, athlete.lastname)
+    is_app_developer = strava_id in APP_DEVELOPER_IDS
+    return render_template(
+        "index.html",
+        logged_in=True,
+        strava_id=strava_id,
+        name=name,
+        is_app_developer=is_app_developer,
+    )
+
+
+@app.post("/logout")
+def logout():
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if token:
+        h = _hash_session_token(token)
+        BrowserSession.query.filter_by(hash=h).delete(synchronize_session=False)
+        db.session.commit()
+    resp = redirect(url_for("index"))
+    resp.set_cookie(
+        SESSION_COOKIE_NAME,
+        "",
+        max_age=0,
+        expires=0,
+        httponly=True,
+        samesite="Lax",
+        secure=request.is_secure,
+        path="/",
+    )
+    return resp
 
 
 @app.get("/oauth/start")

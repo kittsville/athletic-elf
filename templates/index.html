@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Home</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+    dl { margin: 1rem 0; }
+    dt { font-weight: 600; }
+    dd { margin: 0.25rem 0 1rem 0; }
+    a { color: #06c; }
+    button { font: inherit; padding: 0.4rem 0.75rem; cursor: pointer; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Athletic Elf</h1>
+  {% if logged_in %}
+    <p>You are signed in with Strava.</p>
+    <dl>
+      <dt>Strava ID</dt>
+      <dd>{{ strava_id }}</dd>
+      <dt>Name</dt>
+      <dd>{{ name }}</dd>
+      <dt>Role</dt>
+      <dd>{% if is_app_developer %}App developer{% else %}Regular user{% endif %}</dd>
+    </dl>
+    <form method="post" action="{{ url_for('logout') }}">
+      <button type="submit">Log out</button>
+    </form>
+  {% else %}
+    <p>You are not signed in.</p>
+    <p><a href="/oauth/start">Connect with Strava</a></p>
+  {% endif %}
+</body>
+</html>
