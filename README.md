@@ -1,13 +1,14 @@
 # Athletic Elf
 
-A Flask app that receives [Strava webhook events](https://developers.strava.com/docs/webhooks/), fetches activity details via the Strava API, and stores them in a Postgres database.
+A Flask app that receives [Strava webhook events](https://developers.strava.com/docs/webhooks/), fetches activity details via the Strava API, and stores them in a Postgres database. Athletes connect with [OAuth 2.0](https://developers.strava.com/docs/getting-started/#oauth); access and refresh tokens are stored per athlete.
 
 ## How it works
 
-1. Strava sends a webhook event to `POST /webhook` when an activity is created or deleted.
-2. For new activities, a task is queued in the `task` table.
-3. A separate `POST /cron` endpoint processes up to 10 queued tasks per call — fetching activity details from the Strava API and storing them in the `activity` table.
-4. When an activity is deleted, the corresponding record is removed from the `activity` table.
+1. An athlete opens **`GET /oauth/start`** to authorize the app. Strava redirects back to **`GET /oauth/callback`** on your **`DOMAIN`** (must match your app’s [Authorization Callback Domain](https://www.strava.com/settings/api)). Tokens and profile are saved in the **`athelete`** table.
+2. On the first successful registration for your Strava application, the app creates a [push subscription](https://developers.strava.com/docs/webhooks/) with callback URL **`{DOMAIN}/webhook`**. Strava allows **only one subscription per application**. Each event includes **`owner_id`**, which is stored on new **`activity`** rows.
+3. For new activities, a row is inserted into **`activity`** with **`activity_id`** and **`owner_id`** as **`athlete_id`** (pending enrichment).
+4. **`POST /cron`** processes up to 10 rows still missing **`start_date`**, looks up that athlete’s tokens in **`athelete`**, refreshes the access token if needed, then fetches and updates the activity.
+5. When an activity is deleted, the corresponding **`activity`** row is removed. Athlete deauthorization (`object_type: athlete`, `authorized: false`) removes the **`athelete`** row.
 
 ## Setup
 
@@ -30,32 +31,45 @@ pip install -r requirements.txt
 
 ### Environment variables
 
-| Variable             | Required | Default                                              | Description                        |
-|----------------------|----------|------------------------------------------------------|------------------------------------|
-| `STRAVA_ACCESS_TOKEN`| Yes      | —                                                    | OAuth2 access token for Strava API |
-| `VERIFY_TOKEN`       | No       | `STRAVA`                                             | Token for webhook subscription verification |
-| `DATABASE_URL`       | No       | `postgresql://strava:strava@localhost:5432/strava`    | Postgres connection string         |
-| `PORT`               | No       | `80`                                                 | Port the server listens on         |
+| Variable             | Required | Default                                              | Description |
+|----------------------|----------|------------------------------------------------------|-------------|
+| `CLIENT_ID`          | Yes*     | —                                                    | Strava application Client ID |
+| `CLIENT_SECRET`      | Yes*     | —                                                    | Strava application secret |
+| `DOMAIN`             | Yes*     | —                                                    | Public base URL for OAuth redirect and webhooks (e.g. `https://yourapp.example` or `http://127.0.0.1:5000`). A scheme is added if omitted (`https://`). |
+| `SECRET_KEY`         | No       | `dev-change-me`                                      | Flask session secret for OAuth `state` (set in production) |
+| `VERIFY_TOKEN`       | No       | `STRAVA`                                             | Must match the token used when creating the push subscription; Strava echoes it on webhook validation |
+| `DATABASE_URL`       | No       | `postgresql://strava:strava@localhost:5432/strava`    | Postgres connection string |
+| `PORT`               | No       | `80`                                                 | Port the server listens on |
+
+\*Required for OAuth and webhook registration; the app will return 500 from **`/oauth/start`** if they are missing.
 
 ### Run the app
 
 ```bash
-STRAVA_ACCESS_TOKEN=your_token python app.py
+export CLIENT_ID=... CLIENT_SECRET=... DOMAIN=http://127.0.0.1:5000
+python app.py
 ```
+
+For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0.1`) and register the same host in your Strava API application settings.
 
 ## Endpoints
 
+### `GET /oauth/start`
+
+Starts the OAuth 2.0 flow: redirects the user to Strava to approve scopes (`read`, `activity:read`). After approval, Strava redirects to **`/oauth/callback`**.
+
+### `GET /oauth/callback`
+
+Exchanges the authorization code for tokens, upserts **`athelete`** ( **`athlete_id`**, **`username`**, tokens, **`expires_at`** ), and ensures a push subscription exists when possible.
+
 ### `GET /webhook`
 
-Handles Strava's [webhook subscription validation](https://developers.strava.com/docs/webhooks/#subscription-validation). Responds with the `hub.challenge` token when the `hub.verify_token` matches.
+[Webhook validation](https://developers.strava.com/docs/webhooks/#subscription-validation): echoes **`hub.challenge`** when **`hub.verify_token`** matches **`VERIFY_TOKEN`**.
 
 ### `POST /webhook`
 
-Receives webhook events from Strava.
-
-- `aspect_type: create` — queues the activity for processing.
-- `aspect_type: delete` — removes the activity from the database.
+Receives webhook events. **`owner_id`** in the JSON body identifies the athlete for new **`activity`** rows (activity **`create`** events without **`owner_id`** are ignored). Handles activity create/delete and athlete deauthorization.
 
 ### `POST /cron`
 
-Processes up to 10 queued tasks. For each task, fetches the activity from the Strava API, saves it to the `activity` table, and deletes the task from the queue. This should be polled every minute when the app is deployed.
+Processes up to 10 pending **`activity`** rows using the owning athlete’s stored credentials. Should be polled periodically when deployed.
