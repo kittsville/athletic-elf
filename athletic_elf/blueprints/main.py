@@ -83,6 +83,15 @@ def _can_perform_organiser_tasks(athlete: Athelete) -> bool:
     return int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
 
 
+@bp.context_processor
+def inject_nav_context():
+    athlete = getattr(g, "current_athlete", None)
+    show_organiser_nav = athlete is not None and _can_perform_organiser_tasks(
+        athlete
+    )
+    return {"show_organiser_nav": show_organiser_nav}
+
+
 @bp.get("/")
 def index():
     athlete = g.current_athlete

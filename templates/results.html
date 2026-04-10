@@ -8,10 +8,10 @@
     tr:nth-child(even) { background: #fafafa; }
     h2 { font-size: 1.15rem; margin: 0 0 0.5rem 0; }
     section.summary { margin-bottom: 2rem; }
+    .results-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 40rem; }
   </style>
 {% endblock %}
 {% block content %}
-  <p><a href="{{ url_for('main.index') }}">← Back to home</a></p>
   <section class="summary" aria-labelledby="hub-heading">
     <h2 id="hub-heading">Points by hub</h2>
     <table>
@@ -56,6 +56,7 @@
       {% endfor %}
       </tbody>
     </table>
+    <p class="results-note">Per-athlete scores are only visible to organisers and app developers; other signed-in users see hub and department totals only.</p>
   </section>
   {% endif %}
 {% endblock %}

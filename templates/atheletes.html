@@ -2,17 +2,16 @@
 {% block title %}All athletes{% endblock %}
 {% block extra_head %}
   <style>
-    a { color: #06c; }
     button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
     table { border-collapse: collapse; width: 100%; max-width: 64rem; font-size: 0.95rem; }
     th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid #ddd; }
     th { font-weight: 600; background: #f6f6f6; }
     tbody tr:hover { background: #fafafa; }
     .muted { color: #555; font-size: 0.9rem; }
+    .atheletes-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 40rem; }
   </style>
 {% endblock %}
 {% block content %}
-  <p><a href="{{ url_for('main.index') }}">← Home</a></p>
   <h1>All athletes</h1>
   <table>
     <thead>
@@ -52,4 +51,5 @@
     {% endfor %}
     </tbody>
   </table>
+  <p class="atheletes-note">Only organisers and app developers can view this page.</p>
 {% endblock %}
