@@ -10,7 +10,6 @@ import requests as http_client
 from flask import (
     Flask,
     jsonify,
-    make_response,
     redirect,
     render_template,
     request,
@@ -480,11 +479,7 @@ def oauth_callback():
     except Exception as ex:
         print(f"push subscription (may already exist): {ex}")
 
-    body = (
-        f"Registered athlete {aid} ({_athlete_display_name(firstname, lastname)}). "
-        "Webhook subscription created if this was the first registration for this app."
-    )
-    resp = make_response(body, 200)
+    resp = redirect(url_for("index"))
     resp.set_cookie(
         SESSION_COOKIE_NAME,
         session_token,
