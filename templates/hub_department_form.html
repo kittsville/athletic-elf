@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Hub and Department</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+    label { display: block; font-weight: 600; margin-top: 1rem; }
+    select { font: inherit; min-width: 16rem; padding: 0.35rem 0.5rem; }
+    button { font: inherit; padding: 0.4rem 0.75rem; cursor: pointer; margin-top: 1.25rem; }
+    a { color: #06c; }
+  </style>
+</head>
+<body>
+  <h1>Athletic Elf</h1>
+  <p>Please select your Hub and Department</p>
+  <form method="post" action="{{ url_for('main.hub_department_form') }}">
+    <label for="hub">Hub</label>
+    <select id="hub" name="hub" required>
+      <option value="" disabled selected>Select a hub</option>
+      {% for h in hub_options %}
+        <option value="{{ h }}">{{ h }}</option>
+      {% endfor %}
+    </select>
+    <label for="department">Department</label>
+    <select id="department" name="department" required>
+      <option value="" disabled selected>Select a department</option>
+      {% for d in department_options %}
+        <option value="{{ d }}">{{ d }}</option>
+      {% endfor %}
+    </select>
+    <div>
+      <button type="submit">Submit</button>
+    </div>
+  </form>
+</body>
+</html>

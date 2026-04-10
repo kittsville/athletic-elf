@@ -11,7 +11,7 @@ from ..extensions import db
 from ..models import Athelete
 from ..session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 from ..strava_service import ensure_push_subscription
-from ..utils import oauth_redirect_uri
+from ..utils import athlete_hub_department_complete, oauth_redirect_uri
 
 bp = Blueprint("oauth", __name__)
 
@@ -125,4 +125,6 @@ def oauth_callback():
 
     session.permanent = True
     session[BROWSER_TOKEN_SESSION_KEY] = session_token
-    return redirect(url_for("main.index"))
+    if athlete_hub_department_complete(row.hub, row.department):
+        return redirect(url_for("main.index"))
+    return redirect(url_for("main.hub_department_form"))

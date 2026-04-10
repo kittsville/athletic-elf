@@ -3,14 +3,28 @@
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from flask import Blueprint, current_app, g, redirect, render_template, session, url_for
+from flask import (
+    Blueprint,
+    abort,
+    current_app,
+    g,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from points import activities_total_points
 
 from ..extensions import db
 from ..models import Activity, Athelete, BrowserSession
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..strava_service import process_activities
-from ..utils import athlete_display_name, format_moving_time
+from ..utils import (
+    athlete_display_name,
+    athlete_hub_department_complete,
+    format_moving_time,
+)
 
 bp = Blueprint("main", __name__)
 
@@ -34,16 +48,49 @@ def index():
     )
     scored = [a for a in activities if a.start_date is not None]
     team_points = activities_total_points(scored)
+    hub_display = (athlete.hub or "").strip() or "—"
+    department_display = (athlete.department or "").strip() or "—"
     return render_template(
         "index.html",
         logged_in=True,
         strava_id=strava_id,
         name=name,
+        hub_display=hub_display,
+        department_display=department_display,
         is_app_developer=is_app_developer,
         activities=activities,
         team_points=team_points,
         format_moving_time=format_moving_time,
     )
+
+
+@bp.route("/form", methods=["GET", "POST"])
+def hub_department_form():
+    athlete = g.current_athlete
+    hubs = current_app.config["HUB_OPTIONS"]
+    departments = current_app.config["DEPARTMENT_OPTIONS"]
+
+    if request.method == "GET":
+        if athlete_hub_department_complete(athlete.hub, athlete.department):
+            return redirect(url_for("main.index"))
+        return render_template(
+            "hub_department_form.html",
+            hub_options=hubs,
+            department_options=departments,
+        )
+
+    if athlete_hub_department_complete(athlete.hub, athlete.department):
+        abort(400)
+
+    hub = (request.form.get("hub") or "").strip()
+    department = (request.form.get("department") or "").strip()
+    if hub not in hubs or department not in departments:
+        abort(400)
+
+    athlete.hub = hub
+    athlete.department = department
+    db.session.commit()
+    return redirect(url_for("main.index"))
 
 
 @bp.post("/delete-my-data")

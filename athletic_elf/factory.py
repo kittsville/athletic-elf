@@ -5,7 +5,12 @@ import os
 
 from flask import Flask, g, redirect, request, url_for
 
-from .config import Config, parse_activity_start_epoch, parse_app_developer_ids
+from .config import (
+    Config,
+    parse_activity_start_epoch,
+    parse_app_developer_ids,
+    parse_comma_options,
+)
 from .extensions import db
 from .session import current_athlete_from_request
 
@@ -20,6 +25,14 @@ def create_app(config_class: type = Config) -> Flask:
     app.config["APP_DEVELOPER_IDS"] = parse_app_developer_ids()
     app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_activity_start_epoch(
         app.config.get("ACTIVITY_START_DATE")
+    )
+    app.config["HUB_OPTIONS"] = parse_comma_options(
+        os.environ.get("HUB_OPTIONS"),
+        "North Hub,South Hub,East Hub,West Hub",
+    )
+    app.config["DEPARTMENT_OPTIONS"] = parse_comma_options(
+        os.environ.get("DEPARTMENT_OPTIONS"),
+        "Engineering,Sales,Marketing,Operations",
     )
 
     if not app.logger.handlers:
@@ -40,7 +53,9 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(oauth.bp)
     app.register_blueprint(webhook.bp)
 
-    endpoints_requiring_session = frozenset({"main.delete_my_data"})
+    endpoints_requiring_session = frozenset(
+        {"main.delete_my_data", "main.hub_department_form"}
+    )
     endpoints_skip_session_lookup = frozenset(
         {"webhook.webhook_get", "webhook.webhook_post", "main.cron"}
     )

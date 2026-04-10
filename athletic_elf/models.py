@@ -12,6 +12,8 @@ class Athelete(db.Model):
     access_token = db.Column(db.Text, nullable=False)
     refresh_token = db.Column(db.Text, nullable=False)
     expires_at = db.Column(db.Integer, nullable=False)
+    hub = db.Column(db.String(255), nullable=True)
+    department = db.Column(db.String(255), nullable=True)
 
 
 class Activity(db.Model):

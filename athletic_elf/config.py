@@ -21,6 +21,12 @@ def parse_app_developer_ids() -> frozenset[int]:
     return frozenset(ids)
 
 
+def parse_comma_options(raw: str | None, default: str) -> tuple[str, ...]:
+    """Split a comma-separated list into non-empty stripped labels (for Hub/Department pickers)."""
+    s = (raw if raw is not None else default).strip() or default
+    return tuple(p.strip() for p in s.split(",") if p.strip())
+
+
 def parse_activity_start_epoch(iso_value: str | None) -> int | None:
     """
     Competition start instant as Unix epoch seconds for Strava's `after` query param.
