@@ -87,6 +87,13 @@ def _athlete_display_name(firstname: str, lastname: str) -> str:
     return " ".join(p for p in parts if p) or "—"
 
 
+def _format_moving_time(seconds: int | None) -> str:
+    if seconds is None:
+        return "—"
+    minutes = max(0, int(seconds)) // 60
+    return f"{minutes} min"
+
+
 def _parse_strava_datetime(iso: str) -> datetime:
     if iso.endswith("Z"):
         iso = iso[:-1] + "+00:00"
@@ -320,12 +327,26 @@ def index():
     strava_id = int(athlete.athlete_id)
     name = _athlete_display_name(athlete.firstname, athlete.lastname)
     is_app_developer = strava_id in APP_DEVELOPER_IDS
+    activities = (
+        Activity.query.filter_by(athlete_id=strava_id)
+        .order_by(
+            Activity.start_date.is_(None),
+            Activity.start_date.desc(),
+            Activity.id.desc(),
+        )
+        .all()
+    )
+    scored = [a for a in activities if a.start_date is not None]
+    team_points = activities_total_points(scored)
     return render_template(
         "index.html",
         logged_in=True,
         strava_id=strava_id,
         name=name,
         is_app_developer=is_app_developer,
+        activities=activities,
+        team_points=team_points,
+        format_moving_time=_format_moving_time,
     )
 
 
