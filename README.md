@@ -54,6 +54,16 @@ python app.py
 
 For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0.1`) and register the same host in your Strava API application settings.
 
+## Tests
+
+From the repository root, with dependencies installed (`pip install -r requirements.txt`):
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+This matches the [GitHub Actions workflow](.github/workflows/tests.yml). The suite does not require Postgres or Strava credentials.
+
 ## Endpoints
 
 ### `GET /oauth/start`
