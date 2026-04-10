@@ -1,17 +1,16 @@
-"""Browser session cookie ↔ database row."""
+"""Flask session token ↔ database row (hashed)."""
 
 import hashlib
 import secrets
 from datetime import datetime, timezone
 
-from flask import current_app, request
+from flask import current_app, session
 
 from .extensions import db
 from .models import Athelete, BrowserSession
 
-
-def _session_cookie_name() -> str:
-    return current_app.config["SESSION_COOKIE_NAME"]
+# Key in Flask's signed session cookie (distinct from oauth_state).
+BROWSER_TOKEN_SESSION_KEY = "browser_token"
 
 
 def _session_ttl():
@@ -36,7 +35,7 @@ def create_browser_session(athelete_pk: int) -> tuple[str, datetime]:
 
 
 def current_athlete_from_request() -> Athelete | None:
-    token = request.cookies.get(_session_cookie_name())
+    token = session.get(BROWSER_TOKEN_SESSION_KEY)
     if not token:
         return None
     h = hash_session_token(token)

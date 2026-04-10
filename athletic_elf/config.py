@@ -52,8 +52,20 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
     return int(dt.timestamp())
 
 
+def _secret_key_from_env() -> str:
+    """Flask session signing key; must be a long random value from SECRET_KEY in production."""
+    raw = os.environ.get("SECRET_KEY", "").strip()
+    if raw:
+        return raw
+    if os.environ.get("FLASK_ENV") == "production":
+        raise ValueError(
+            "SECRET_KEY must be set in the environment for secure Flask sessions in production."
+        )
+    return "dev-change-me"
+
+
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-change-me")
+    SECRET_KEY = _secret_key_from_env()
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
     )
@@ -69,8 +81,8 @@ class Config:
     STRAVA_OAUTH_TOKEN = "https://www.strava.com/oauth/token"
     OAUTH_SCOPES = "read,activity:read,profile:read_all"
 
-    SESSION_COOKIE_NAME = "elf_session"
     SESSION_TTL = timedelta(hours=48)
+    PERMANENT_SESSION_LIFETIME = SESSION_TTL
 
     # ISO 8601: competition start (e.g. 2025-06-01T00:00:00Z). Used for backfill `after`.
     ACTIVITY_START_DATE = os.environ.get("ACTIVITY_START_DATE", "").strip() or None

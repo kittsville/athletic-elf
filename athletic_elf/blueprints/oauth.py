@@ -9,7 +9,7 @@ from flask import Blueprint, current_app, redirect, request, session, url_for
 from ..background import schedule_initial_activity_sync
 from ..extensions import db
 from ..models import Athelete
-from ..session import create_browser_session
+from ..session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 from ..strava_service import ensure_push_subscription
 from ..utils import oauth_redirect_uri
 
@@ -112,7 +112,7 @@ def oauth_callback():
         )
 
     db.session.flush()
-    session_token, session_expires = create_browser_session(row.id)
+    session_token, _ = create_browser_session(row.id)
     db.session.commit()
 
     try:
@@ -123,16 +123,6 @@ def oauth_callback():
     if new_registration:
         schedule_initial_activity_sync(current_app._get_current_object(), row.id)
 
-    resp = redirect(url_for("main.index"))
-    ttl = int(current_app.config["SESSION_TTL"].total_seconds())
-    resp.set_cookie(
-        current_app.config["SESSION_COOKIE_NAME"],
-        session_token,
-        max_age=ttl,
-        expires=session_expires,
-        httponly=True,
-        samesite="Lax",
-        secure=request.is_secure,
-        path="/",
-    )
-    return resp
+    session.permanent = True
+    session[BROWSER_TOKEN_SESSION_KEY] = session_token
+    return redirect(url_for("main.index"))

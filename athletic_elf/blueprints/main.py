@@ -3,34 +3,16 @@
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from flask import Blueprint, current_app, g, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, g, redirect, render_template, session, url_for
 from points import activities_total_points
 
 from ..extensions import db
 from ..models import Activity, Athelete, BrowserSession
-from ..session import hash_session_token
+from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..strava_service import process_activities
 from ..utils import athlete_display_name, format_moving_time
 
 bp = Blueprint("main", __name__)
-
-
-def _session_cookie_name():
-    return current_app.config["SESSION_COOKIE_NAME"]
-
-
-def _clear_session_cookie(response):
-    response.set_cookie(
-        _session_cookie_name(),
-        "",
-        max_age=0,
-        expires=0,
-        httponly=True,
-        samesite="Lax",
-        secure=request.is_secure,
-        path="/",
-    )
-    return response
 
 
 @bp.get("/")
@@ -75,19 +57,19 @@ def delete_my_data():
     )
     Athelete.query.filter_by(id=pk).delete(synchronize_session=False)
     db.session.commit()
-    resp = redirect(url_for("main.index"))
-    return _clear_session_cookie(resp)
+    session.pop(BROWSER_TOKEN_SESSION_KEY, None)
+    return redirect(url_for("main.index"))
 
 
 @bp.post("/logout")
 def logout():
-    token = request.cookies.get(_session_cookie_name())
+    token = session.get(BROWSER_TOKEN_SESSION_KEY)
     if token:
         h = hash_session_token(token)
         BrowserSession.query.filter_by(hash=h).delete(synchronize_session=False)
         db.session.commit()
-    resp = redirect(url_for("main.index"))
-    return _clear_session_cookie(resp)
+    session.pop(BROWSER_TOKEN_SESSION_KEY, None)
+    return redirect(url_for("main.index"))
 
 
 @bp.post("/cron")
