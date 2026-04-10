@@ -47,6 +47,7 @@ pip install -r requirements-dev.txt
 | `SECRET_KEY`         | No       | `dev-change-me`                                      | Flask session secret for OAuth `state` (set in production) |
 | `VERIFY_TOKEN`       | No       | `STRAVA`                                             | Must match the token used when creating the push subscription; Strava echoes it on webhook validation |
 | `DATABASE_URL`       | No       | `postgresql://strava:strava@localhost:5432/strava`    | Postgres connection string |
+| `ACTIVITY_START_DATE` | No      | —                                                    | ISO 8601 competition start (e.g. `2025-06-01T00:00:00Z` or `2025-06-01` for midnight UTC). On **first** OAuth signup, the app backfills the athlete’s activities from Strava with `GET /athlete/activities?after=<epoch>` in a background thread. If unset or invalid, backfill is skipped. |
 | `PORT`               | No       | `80`                                                 | Port the server listens on |
 
 \*Required for OAuth and webhook registration; the app will return 500 from **`/oauth/start`** if they are missing.

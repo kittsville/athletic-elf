@@ -10,6 +10,99 @@ from .models import Activity, Athelete
 from .utils import domain_base, parse_strava_datetime
 
 
+def _apply_summary_activity_payload(row: Activity, payload: dict, athlete_strava_id: int) -> None:
+    """Map a SummaryActivity JSON object onto our Activity row."""
+    row.activity_id = int(payload["id"])
+    meta = payload.get("athlete")
+    if isinstance(meta, dict) and meta.get("id") is not None:
+        row.athlete_id = int(meta["id"])
+    else:
+        row.athlete_id = athlete_strava_id
+    row.distance = payload.get("distance")
+    st = payload.get("sport_type")
+    if st is None:
+        row.sport_type = None
+    else:
+        row.sport_type = st if isinstance(st, str) else str(st)
+    sd = payload.get("start_date")
+    row.start_date = parse_strava_datetime(sd) if sd else None
+    row.moving_time = payload.get("moving_time")
+
+
+def sync_activities_since_competition_start(athlete_pk: int) -> int:
+    """
+    Paginate GET /athlete/activities with `after` = competition start epoch;
+    upsert SummaryActivity rows for this athlete's Strava account.
+    """
+    cfg = current_app.config
+    after = cfg.get("ACTIVITY_FETCH_AFTER_EPOCH")
+    if after is None:
+        current_app.logger.info(
+            "ACTIVITY_START_DATE not set or invalid; skipping initial activity backfill "
+            "for athlete pk=%s",
+            athlete_pk,
+        )
+        return 0
+
+    athlete = db.session.get(Athelete, athlete_pk)
+    if athlete is None:
+        current_app.logger.warning(
+            "Initial activity sync: no athlete row for pk=%s", athlete_pk
+        )
+        return 0
+
+    api_base = cfg["STRAVA_API_BASE"]
+    per_page = int(cfg.get("STRAVA_ACTIVITIES_PAGE_SIZE") or 200)
+    per_page = min(max(per_page, 1), 200)
+    url = f"{api_base}/athlete/activities"
+    strava_athlete_id = int(athlete.athlete_id)
+    total_upserted = 0
+    page = 1
+
+    while True:
+        maybe_refresh_athlete_token(athlete)
+        r = http_client.get(
+            url,
+            params={
+                "after": after,
+                "page": page,
+                "per_page": per_page,
+            },
+            headers={"Authorization": f"Bearer {athlete.access_token}"},
+            timeout=60,
+        )
+        r.raise_for_status()
+        batch = r.json()
+        if not batch:
+            break
+        if not isinstance(batch, list):
+            current_app.logger.error(
+                "Unexpected /athlete/activities response for athlete pk=%s: %r",
+                athlete_pk,
+                batch,
+            )
+            break
+
+        for payload in batch:
+            if not isinstance(payload, dict) or payload.get("id") is None:
+                continue
+            aid = int(payload["id"])
+            existing = Activity.query.filter_by(activity_id=aid).first()
+            if existing is None:
+                existing = Activity(activity_id=aid)
+                db.session.add(existing)
+            _apply_summary_activity_payload(existing, payload, strava_athlete_id)
+
+        db.session.commit()
+        total_upserted += len(batch)
+
+        if len(batch) < per_page:
+            break
+        page += 1
+
+    return total_upserted
+
+
 def list_push_subscriptions():
     cfg = current_app.config
     r = http_client.get(

@@ -6,6 +6,7 @@ from urllib.parse import quote, urlencode
 import requests as http_client
 from flask import Blueprint, current_app, redirect, request, session, url_for
 
+from ..background import schedule_initial_activity_sync
 from ..extensions import db
 from ..models import Athelete
 from ..session import create_browser_session
@@ -118,6 +119,9 @@ def oauth_callback():
         ensure_push_subscription()
     except Exception as ex:
         print(f"push subscription (may already exist): {ex}")
+
+    if new_registration:
+        schedule_initial_activity_sync(current_app._get_current_object(), row.id)
 
     resp = redirect(url_for("main.index"))
     ttl = int(current_app.config["SESSION_TTL"].total_seconds())

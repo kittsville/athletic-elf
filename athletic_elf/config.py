@@ -1,7 +1,10 @@
 """Application configuration loaded from the environment."""
 
+import logging
 import os
-from datetime import timedelta
+from datetime import date, datetime, timedelta, timezone
+
+_log = logging.getLogger(__name__)
 
 
 def parse_app_developer_ids() -> frozenset[int]:
@@ -16,6 +19,37 @@ def parse_app_developer_ids() -> frozenset[int]:
         except ValueError:
             continue
     return frozenset(ids)
+
+
+def parse_activity_start_epoch(iso_value: str | None) -> int | None:
+    """
+    Competition start instant as Unix epoch seconds for Strava's `after` query param.
+
+    Accepts ISO 8601 datetimes (with optional `Z`) or a date-only `YYYY-MM-DD`
+    (interpreted as midnight UTC).
+    """
+    if not iso_value:
+        return None
+    raw = iso_value.strip()
+    if not raw:
+        return None
+    if raw.endswith("Z"):
+        raw = raw[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(raw)
+    except ValueError:
+        try:
+            d = date.fromisoformat(raw)
+        except ValueError:
+            _log.warning("Invalid ACTIVITY_START_DATE %r; skipping historical sync", raw)
+            return None
+        dt = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+    else:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+    return int(dt.timestamp())
 
 
 class Config:
@@ -37,3 +71,8 @@ class Config:
 
     SESSION_COOKIE_NAME = "elf_session"
     SESSION_TTL = timedelta(hours=48)
+
+    # ISO 8601: competition start (e.g. 2025-06-01T00:00:00Z). Used for backfill `after`.
+    ACTIVITY_START_DATE = os.environ.get("ACTIVITY_START_DATE", "").strip() or None
+    # Strava allows up to 200 per page for GET /athlete/activities.
+    STRAVA_ACTIVITIES_PAGE_SIZE = 200

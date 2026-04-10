@@ -2,7 +2,7 @@
 
 import os
 
-from athletic_elf import create_app
+from athletic_elf.factory import create_app
 
 app = create_app()
 
