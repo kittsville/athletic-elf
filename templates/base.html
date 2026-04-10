@@ -33,13 +33,13 @@
     .app-nav li form { display: inline; margin: 0; }
     .app-nav a { color: #06c; }
     .app-nav button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
-    .app-nav .danger { color: #b00020; border-color: #b00020; }
     main.page { margin: 2rem; }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
   <div class="dev-banner" role="status">App under development. Scores reset when competition begins</div>
+  {% block app_nav %}
   {% if g.current_athlete %}
   <nav class="app-nav" aria-label="Account">
     <ul>
@@ -48,15 +48,7 @@
       {% if show_organiser_nav %}
       <li><a href="{{ url_for('main.atheletes') }}">All athletes</a></li>
       {% endif %}
-      <li>
-        <form
-          method="post"
-          action="{{ url_for('main.delete_my_data') }}"
-          onsubmit="return confirm('This permanently deletes all stored activities, sessions, and your account data in this app. Your Strava account will not be affected. Continue?');"
-        >
-          <button type="submit" class="danger">Delete all my data</button>
-        </form>
-      </li>
+      <li><a href="{{ url_for('main.gdpr') }}">GDPR</a></li>
       <li>
         <form method="post" action="{{ url_for('main.logout') }}">
           <button type="submit">Log out</button>
@@ -65,6 +57,7 @@
     </ul>
   </nav>
   {% endif %}
+  {% endblock %}
   <main class="page">
     {% block content %}{% endblock %}
   </main>

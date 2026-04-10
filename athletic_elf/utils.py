@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 
 from flask import current_app
 
+from .config import parse_activity_start_epoch
+
 
 def domain_base() -> str:
     d = current_app.config.get("DOMAIN")
@@ -53,3 +55,12 @@ def parse_strava_datetime(iso: str) -> datetime:
     if dt.tzinfo is not None:
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
+
+
+def activity_start_date_for_display(iso_value: str | None) -> str | None:
+    """Competition start as shown on the home page; None if unset or invalid."""
+    epoch = parse_activity_start_epoch(iso_value)
+    if epoch is None:
+        return None
+    dt = datetime.fromtimestamp(epoch, tz=timezone.utc)
+    return dt.strftime("%d %B %Y, %H:%M UTC")

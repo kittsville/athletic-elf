@@ -22,6 +22,7 @@ from ..models import Activity, Athelete, BrowserSession
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..strava_service import process_activities
 from ..utils import (
+    activity_start_date_for_display,
     athlete_display_name,
     athlete_hub_department_complete,
     format_moving_time,
@@ -139,6 +140,9 @@ def index():
         activities=activities,
         team_points=team_points,
         format_moving_time=format_moving_time,
+        activity_start_display=activity_start_date_for_display(
+            current_app.config.get("ACTIVITY_START_DATE")
+        ),
     )
 
 
@@ -169,6 +173,11 @@ def hub_department_form():
     athlete.department = department
     db.session.commit()
     return redirect(url_for("main.index"))
+
+
+@bp.get("/gdpr")
+def gdpr():
+    return render_template("gdpr.html")
 
 
 @bp.post("/delete-my-data")
