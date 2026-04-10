@@ -44,9 +44,7 @@ def _points_by_athlete_strava_id() -> dict[int, int]:
     by_athlete: defaultdict[int, list] = defaultdict(list)
     for a in activities:
         by_athlete[int(a.athlete_id)].append(a)
-    return {
-        aid: activities_total_points(acts) for aid, acts in by_athlete.items()
-    }
+    return {aid: activities_total_points(acts) for aid, acts in by_athlete.items()}
 
 
 def _summaries_by_hub_and_department(
@@ -101,9 +99,7 @@ def _can_perform_organiser_tasks(athlete: Athelete) -> bool:
 @bp.context_processor
 def inject_nav_context():
     athlete = getattr(g, "current_athlete", None)
-    show_organiser_nav = athlete is not None and _can_perform_organiser_tasks(
-        athlete
-    )
+    show_organiser_nav = athlete is not None and _can_perform_organiser_tasks(athlete)
     return {"show_organiser_nav": show_organiser_nav}
 
 

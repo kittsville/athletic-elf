@@ -63,13 +63,24 @@ For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0
 
 ## Tests
 
-From the repository root, with dependencies installed (`pip install -r requirements.txt`):
+Use a virtualenv and install dependencies so `flask_sqlalchemy` and the rest of **`requirements.txt`** are on the same interpreter you use to run tests:
 
 ```bash
-python -m unittest discover -s tests -v
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
 ```
 
-This matches the [GitHub Actions workflow](.github/workflows/tests.yml). The suite does not require Postgres or Strava credentials.
+From the repository root, either run the helper (uses **`.venv`** automatically when it exists) or invoke unittest with the venv’s Python:
+
+```bash
+python3 run_tests.py
+# equivalent when .venv is present:
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+This matches the [GitHub Actions workflow](.github/workflows/tests.yml) (CI installs **`requirements.txt`** then runs **`python -m unittest discover -s tests -v`**). The suite does not require Postgres or Strava credentials.
+
+**Note:** `python3 -m unittest discover …` alone uses your system **`python3`**, which often has no project packages installed and can fail importing **`test_hub_department`** with **`ModuleNotFoundError`**. Prefer **`run_tests.py`** or **`.venv/bin/python`** after installing deps.
 
 CI also runs **`ruff format --check .`** (see the **`format`** job in that workflow). To run the same check locally, install **`requirements-dev.txt`** and run **`ruff format --check .`**; use **`ruff format .`** to apply the project’s formatting.
 

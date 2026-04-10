@@ -10,7 +10,9 @@ from .models import Activity, Athelete
 from .utils import domain_base, parse_strava_datetime
 
 
-def _apply_summary_activity_payload(row: Activity, payload: dict, athlete_strava_id: int) -> None:
+def _apply_summary_activity_payload(
+    row: Activity, payload: dict, athlete_strava_id: int
+) -> None:
     """Map a SummaryActivity JSON object onto our Activity row."""
     row.activity_id = int(payload["id"])
     meta = payload.get("athlete")

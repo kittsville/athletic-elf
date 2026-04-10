@@ -47,7 +47,9 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
         try:
             d = date.fromisoformat(raw)
         except ValueError:
-            _log.warning("Invalid ACTIVITY_START_DATE %r; skipping historical sync", raw)
+            _log.warning(
+                "Invalid ACTIVITY_START_DATE %r; skipping historical sync", raw
+            )
             return None
         dt = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
     else:
@@ -74,7 +76,7 @@ class Config:
     SECRET_KEY = _secret_key_from_env()
 
     # Branding (optional favicon URL; name defaults for page titles/headings).
-    APP_NAME = (os.getenv("APP_NAME", "Athletic Elf").strip() or "Athletic Elf")
+    APP_NAME = os.getenv("APP_NAME", "Athletic Elf").strip() or "Athletic Elf"
     APP_FAVICON = os.getenv("APP_FAVICON", "").strip() or None
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"

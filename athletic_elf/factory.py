@@ -27,14 +27,17 @@ def create_app(config_class: type = Config) -> Flask:
     app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_activity_start_epoch(
         app.config.get("ACTIVITY_START_DATE")
     )
-    app.config["HUB_OPTIONS"] = parse_comma_options(
-        os.environ.get("HUB_OPTIONS"),
-        "North Hub,South Hub,East Hub,West Hub",
-    )
-    app.config["DEPARTMENT_OPTIONS"] = parse_comma_options(
-        os.environ.get("DEPARTMENT_OPTIONS"),
-        "Engineering,Sales,Marketing,Operations",
-    )
+    # Allow tests (or custom Config subclasses) to pin options; otherwise env wins.
+    if getattr(config_class, "HUB_OPTIONS", None) is None:
+        app.config["HUB_OPTIONS"] = parse_comma_options(
+            os.environ.get("HUB_OPTIONS"),
+            "North Hub,South Hub,East Hub,West Hub",
+        )
+    if getattr(config_class, "DEPARTMENT_OPTIONS", None) is None:
+        app.config["DEPARTMENT_OPTIONS"] = parse_comma_options(
+            os.environ.get("DEPARTMENT_OPTIONS"),
+            "Engineering,Sales,Marketing,Operations",
+        )
 
     if not app.logger.handlers:
         handler = logging.StreamHandler()
