@@ -14,6 +14,7 @@
     table.activities th { font-weight: 600; background: #f6f6f6; }
     table.activities tbody tr:hover { background: #fafafa; }
     .muted { color: #555; font-size: 0.9rem; }
+    .activities-intro { margin: 0 0 1rem 0; max-width: 48rem; }
   </style>
 {% endblock %}
 {% block content %}
@@ -34,6 +35,14 @@
     </dl>
     <section class="activities-section">
       <h2>Your activities</h2>
+      <p class="muted activities-intro">
+        {% if activity_start_display %}
+          All activities listed below are on or after the competition start
+          (<strong>{{ activity_start_display }}</strong>)
+        {% else %}
+          All activities listed below are from the competition start onward.
+        {% endif %}
+      </p>
       <p class="team-points">
         <strong>Your total points:</strong> {{ team_points }}
         <span class="muted">(top 80% atheletes averaged for hub/department scores)</span>
