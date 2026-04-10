@@ -62,7 +62,7 @@ Starts the OAuth 2.0 flow: redirects the user to Strava to approve scopes (`read
 
 ### `GET /oauth/callback`
 
-Exchanges the authorization code for tokens, upserts **`athelete`** ( **`athlete_id`**, **`username`**, tokens, **`expires_at`** ), and ensures a push subscription exists when possible.
+Exchanges the authorization code for tokens, upserts **`athelete`** ( **`athlete_id`**, **`firstname`**, **`lastname`**, tokens, **`expires_at`** ), and ensures a push subscription exists when possible.
 
 ### `GET /webhook`
 

@@ -1,3 +1,4 @@
+import logging
 import os
 import secrets
 from collections import defaultdict
@@ -11,6 +12,16 @@ from flask_sqlalchemy import SQLAlchemy
 from points import activities_total_points
 
 app = Flask(__name__)
+# Python’s root “last resort” handler only emits WARNING+, and app.logger often has no
+# handlers, so INFO would be dropped. Attach a stderr handler when nothing is configured.
+if not app.logger.handlers:
+    _h = logging.StreamHandler()
+    _h.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
+    app.logger.addHandler(_h)
+app.logger.setLevel(logging.INFO)
+
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
 )
@@ -26,7 +37,7 @@ STRAVA_OAUTH_AUTHORIZE = "https://www.strava.com/oauth/authorize"
 STRAVA_OAUTH_TOKEN = "https://www.strava.com/oauth/token"
 
 # Scopes: read (profile), activity:read for activity details + webhooks for non-private activities
-OAUTH_SCOPES = "read,activity:read"
+OAUTH_SCOPES = "read,activity:read,profile:read_all"
 
 
 def _domain_base() -> str:
@@ -42,6 +53,11 @@ def _oauth_redirect_uri() -> str:
     return f"{_domain_base()}/oauth/callback"
 
 
+def _athlete_display_name(firstname: str, lastname: str) -> str:
+    parts = [firstname.strip(), lastname.strip()]
+    return " ".join(p for p in parts if p) or "—"
+
+
 def _parse_strava_datetime(iso: str) -> datetime:
     if iso.endswith("Z"):
         iso = iso[:-1] + "+00:00"
@@ -55,7 +71,8 @@ class Athelete(db.Model):
     __tablename__ = "athelete"
     id = db.Column(db.Integer, primary_key=True)
     athlete_id = db.Column(db.BigInteger, nullable=False, unique=True)
-    username = db.Column(db.String(255), nullable=False, default="")
+    firstname = db.Column(db.String(255), nullable=False, default="")
+    lastname = db.Column(db.String(255), nullable=False, default="")
     access_token = db.Column(db.Text, nullable=False)
     refresh_token = db.Column(db.Text, nullable=False)
     expires_at = db.Column(db.Integer, nullable=False)
@@ -279,25 +296,45 @@ def oauth_callback():
     data = token_resp.json()
     athlete_info = data["athlete"]
     aid = athlete_info["id"]
-    username = athlete_info.get("username") or ""
+    firstname = athlete_info.get("firstname") or ""
+    lastname = athlete_info.get("lastname") or ""
 
     row = Athelete.query.filter_by(athlete_id=aid).first()
     if row is None:
         row = Athelete(
             athlete_id=aid,
-            username=username,
+            firstname=firstname,
+            lastname=lastname,
             access_token=data["access_token"],
             refresh_token=data["refresh_token"],
             expires_at=data["expires_at"],
         )
         db.session.add(row)
+        new_registration = True
     else:
-        row.username = username
+        row.firstname = firstname
+        row.lastname = lastname
         row.access_token = data["access_token"]
         row.refresh_token = data["refresh_token"]
         row.expires_at = data["expires_at"]
+        new_registration = False
 
     db.session.commit()
+
+    if new_registration:
+        app.logger.info(
+            "New athlete registered via OAuth: athlete_id=%s firstname=%s lastname=%s",
+            aid,
+            firstname,
+            lastname,
+        )
+    else:
+        app.logger.info(
+            "Athlete re-authenticated via OAuth: athlete_id=%s firstname=%s lastname=%s",
+            aid,
+            firstname,
+            lastname,
+        )
 
     try:
         _ensure_push_subscription()
@@ -305,7 +342,7 @@ def oauth_callback():
         print(f"push subscription (may already exist): {ex}")
 
     return (
-        f"Registered athlete {aid} ({username}). "
+        f"Registered athlete {aid} ({_athlete_display_name(firstname, lastname)}). "
         "Webhook subscription created if this was the first registration for this app.",
         200,
     )
@@ -335,15 +372,16 @@ def results():
     rows = []
     for athlete_id, acts in by_athlete.items():
         athelete = Athelete.query.filter_by(athlete_id=athlete_id).first()
-        username = (
-            athelete.username
-            if athelete and athelete.username
-            else "—"
-        )
+        if athelete:
+            fn = athelete.firstname or ""
+            ln = athelete.lastname or ""
+        else:
+            fn, ln = "", ""
         pts = activities_total_points(acts)
         rows.append(
             {
-                "username": username,
+                "firstname": fn,
+                "lastname": ln,
                 "athlete_id": athlete_id,
                 "points": pts,
             }
