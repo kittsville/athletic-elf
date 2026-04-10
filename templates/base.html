@@ -44,8 +44,8 @@
   <nav class="app-nav" aria-label="Account">
     <ul>
       <li><a href="{{ url_for('main.index') }}">Home</a></li>
-      {% if show_organiser_nav %}
       <li><a href="{{ url_for('main.results') }}">Results</a></li>
+      {% if show_organiser_nav %}
       <li><a href="{{ url_for('main.atheletes') }}">All athletes</a></li>
       {% endif %}
       <li>

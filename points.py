@@ -1,3 +1,4 @@
+import math
 from collections import defaultdict
 
 # Strava DetailedActivity.sport_type values (see Strava API) -> scoring category
@@ -104,3 +105,20 @@ def activities_total_points(activities):
         total += min(mt_day // _SECONDS_PER_EASY_POINT, _EASY_FITNESS_DAILY_CAP)
 
     return total
+
+
+def team_points(per_athlete_points: list[int]) -> float:
+    """
+    Score for a hub or department team from each member's total points.
+
+    If the team has fewer than five athletes, the team scores 0. Otherwise the
+    score is the mean of the highest-scoring subset whose size is the smallest
+    whole number at least 80% of the team (e.g. 5 athletes → top 4 averaged).
+    """
+    n = len(per_athlete_points)
+    if n < 5:
+        return 0.0
+    k = math.ceil(0.8 * n)
+    ordered = sorted(per_athlete_points, reverse=True)
+    top = ordered[:k]
+    return sum(top) / k

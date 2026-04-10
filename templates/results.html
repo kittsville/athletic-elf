@@ -9,18 +9,21 @@
     h2 { font-size: 1.15rem; margin: 0 0 0.5rem 0; }
     section.summary { margin-bottom: 2rem; }
     .results-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 40rem; }
+    .results-table-note { color: #555; font-size: 0.9rem; margin: 0 0 0.75rem 0; max-width: 44rem; }
   </style>
 {% endblock %}
 {% block content %}
   <section class="summary" aria-labelledby="hub-heading">
     <h2 id="hub-heading">Points by hub</h2>
+    <p class="results-table-note">Team score is the average of the top 80% of this hub&rsquo;s athletes (by individual points); hubs with fewer than five athletes score 0.</p>
     <table>
-      <thead><tr><th>Hub</th><th>Points</th></tr></thead>
+      <thead><tr><th>Hub</th><th>Atheletes</th><th>Points</th></tr></thead>
       <tbody>
       {% for row in hub_summary %}
         <tr>
           <td>{{ row.name }}</td>
-          <td>{{ row.points }}</td>
+          <td>{{ row.athlete_count }}</td>
+          <td>{{ "%.2f"|format(row.points) }}</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -28,13 +31,15 @@
   </section>
   <section class="summary" aria-labelledby="dept-heading">
     <h2 id="dept-heading">Points by department</h2>
+    <p class="results-table-note">Team score is the average of the top 80% of this department&rsquo;s athletes (by individual points); departments with fewer than five athletes score 0.</p>
     <table>
-      <thead><tr><th>Department</th><th>Points</th></tr></thead>
+      <thead><tr><th>Department</th><th>Atheletes</th><th>Points</th></tr></thead>
       <tbody>
       {% for row in department_summary %}
         <tr>
           <td>{{ row.name }}</td>
-          <td>{{ row.points }}</td>
+          <td>{{ row.athlete_count }}</td>
+          <td>{{ "%.2f"|format(row.points) }}</td>
         </tr>
       {% endfor %}
       </tbody>

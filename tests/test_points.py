@@ -8,7 +8,7 @@ import unittest
 from datetime import datetime
 from types import SimpleNamespace
 
-from points import activities_total_points
+from points import activities_total_points, team_points
 
 
 def _activity(
@@ -275,6 +275,28 @@ class TestAccumulationAcrossActivities(unittest.TestCase):
         ]
         # 1 + 1 + 1 + 1 + 1 + 1 = 6
         self.assertEqual(activities_total_points(acts), 6)
+
+
+class TestTeamPoints(unittest.TestCase):
+    """team_points: top-80% mean, minimum 5 athletes."""
+
+    def test_fewer_than_five_athletes_scores_zero(self):
+        self.assertEqual(team_points([]), 0.0)
+        self.assertEqual(team_points([100]), 0.0)
+        self.assertEqual(team_points([10, 20, 30]), 0.0)
+        self.assertEqual(team_points([1, 2, 3, 4]), 0.0)
+
+    def test_five_athletes_averages_top_four(self):
+        # 80% of 5 → 4; top scores 50, 40, 30, 20 (drop 10)
+        self.assertEqual(team_points([10, 20, 30, 40, 50]), 35.0)
+
+    def test_six_athletes_averages_top_five(self):
+        # ceil(0.8 * 6) = 5; drop lowest (1)
+        self.assertEqual(team_points([1, 2, 3, 4, 5, 6]), 4.0)
+
+    def test_ten_athletes_averages_top_eight(self):
+        # ceil(0.8 * 10) = 8; drop 1 and 2
+        self.assertEqual(team_points([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), 6.5)
 
 
 if __name__ == "__main__":

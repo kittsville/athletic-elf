@@ -14,7 +14,7 @@ from flask import (
     session,
     url_for,
 )
-from points import activities_total_points
+from points import activities_total_points, team_points
 from sqlalchemy.orm import load_only
 
 from ..extensions import db
@@ -53,11 +53,11 @@ def _summaries_by_hub_and_department(
     hub_options: list[str],
     department_options: list[str],
 ) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
-    """Total points per configured hub and department (0 if no athletes or no scored activities)."""
+    """Per hub/department: team_points() over each member's total points (see points.team_points)."""
     hub_set = frozenset(hub_options)
     dept_set = frozenset(department_options)
-    hub_totals: defaultdict[str, int] = defaultdict(int)
-    dept_totals: defaultdict[str, int] = defaultdict(int)
+    hub_member_points: defaultdict[str, list[int]] = defaultdict(list)
+    dept_member_points: defaultdict[str, list[int]] = defaultdict(list)
     athletes = Athelete.query.options(
         load_only(Athelete.athlete_id, Athelete.hub, Athelete.department)
     ).all()
@@ -66,14 +66,28 @@ def _summaries_by_hub_and_department(
         pts = points_by.get(aid, 0)
         h = (a.hub or "").strip()
         if h in hub_set:
-            hub_totals[h] += pts
+            hub_member_points[h].append(pts)
         d = (a.department or "").strip()
         if d in dept_set:
-            dept_totals[d] += pts
-    hub_rows = [{"name": h, "points": hub_totals.get(h, 0)} for h in hub_options]
-    dept_rows = [{"name": d, "points": dept_totals.get(d, 0)} for d in department_options]
-    hub_rows.sort(key=lambda r: (-int(r["points"]), str(r["name"])))
-    dept_rows.sort(key=lambda r: (-int(r["points"]), str(r["name"])))
+            dept_member_points[d].append(pts)
+    hub_rows = [
+        {
+            "name": h,
+            "athlete_count": len(hub_member_points[h]),
+            "points": team_points(hub_member_points[h]),
+        }
+        for h in hub_options
+    ]
+    dept_rows = [
+        {
+            "name": d,
+            "athlete_count": len(dept_member_points[d]),
+            "points": team_points(dept_member_points[d]),
+        }
+        for d in department_options
+    ]
+    hub_rows.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
+    dept_rows.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
     return hub_rows, dept_rows
 
 
