@@ -12,15 +12,15 @@ class Athelete(db.Model):
     access_token = db.Column(db.Text, nullable=False)
     refresh_token = db.Column(db.Text, nullable=False)
     expires_at = db.Column(db.Integer, nullable=False)
-    hub = db.Column(db.String(255), nullable=True)
-    department = db.Column(db.String(255), nullable=True)
+    hub = db.Column(db.String(255), nullable=True, index=True)
+    department = db.Column(db.String(255), nullable=True, index=True)
 
 
 class Activity(db.Model):
     __tablename__ = "activity"
     id = db.Column(db.Integer, primary_key=True)
-    activity_id = db.Column(db.BigInteger, nullable=False)
-    athlete_id = db.Column(db.BigInteger, nullable=True)
+    activity_id = db.Column(db.BigInteger, nullable=False, unique=True)
+    athlete_id = db.Column(db.BigInteger, nullable=True, index=True)
     distance = db.Column(db.Float, nullable=True)
     sport_type = db.Column(db.String(255), nullable=True)
     start_date = db.Column(db.DateTime, nullable=True)
