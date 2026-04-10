@@ -84,18 +84,18 @@
     <div class="actions">
       <form
         method="post"
-        action="{{ url_for('delete_my_data') }}"
+        action="{{ url_for('main.delete_my_data') }}"
         onsubmit="return confirm('This permanently deletes all stored activities, sessions, and your account data in this app. Continue?');"
       >
         <button type="submit" class="danger">Delete all my data</button>
       </form>
-      <form method="post" action="{{ url_for('logout') }}">
+      <form method="post" action="{{ url_for('main.logout') }}">
         <button type="submit">Log out</button>
       </form>
     </div>
   {% else %}
     <p>You are not signed in.</p>
-    <p><a href="/oauth/start">Connect with Strava</a></p>
+    <p><a href="{{ url_for('oauth.oauth_start') }}">Connect with Strava</a></p>
   {% endif %}
 </body>
 </html>
