@@ -28,7 +28,7 @@ _SCORE_HARD_FITNESS = frozenset(
 )
 # Table types intersected with Strava sport_type enum (Stretching/Cricket/Dance etc. omitted)
 _SCORE_EASY_FITNESS = frozenset(
-    {"Yoga", "Pilates", "TableTennis", "Badminton", "Windsurf", "Kitesurf", "Sail"}
+    {"Yoga", "Pilates", "TableTennis", "Badminton", "Windsurf", "Kitesurf", "Sail", "Basketball", "Volleyball", "Padel"}
 )
 
 _EASY_FITNESS_DAILY_CAP = 5
