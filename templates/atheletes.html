@@ -27,6 +27,7 @@
         <th>Name</th>
         <th>Hub</th>
         <th>Department</th>
+        <th>Score</th>
         <th>Role</th>
         <th>Actions</th>
       </tr>
@@ -38,6 +39,7 @@
         <td>{{ row.name }}</td>
         <td>{{ row.hub }}</td>
         <td>{{ row.department }}</td>
+        <td>{{ row.score }}</td>
         <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser) }}</td>
         <td>
           {% if row.is_organiser or row.is_app_developer %}

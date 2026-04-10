@@ -30,6 +30,24 @@ from ..utils import (
 bp = Blueprint("main", __name__)
 
 
+def _points_by_athlete_strava_id() -> dict[int, int]:
+    """Total points per Strava athlete id (activities with a start_date only)."""
+    activities = (
+        Activity.query.filter(
+            Activity.athlete_id.isnot(None),
+            Activity.start_date.isnot(None),
+        )
+        .order_by(Activity.athlete_id, Activity.id)
+        .all()
+    )
+    by_athlete: defaultdict[int, list] = defaultdict(list)
+    for a in activities:
+        by_athlete[int(a.athlete_id)].append(a)
+    return {
+        aid: activities_total_points(acts) for aid, acts in by_athlete.items()
+    }
+
+
 def _can_perform_atheletes_updates(athlete: Athelete) -> bool:
     if athlete.is_organiser:
         return True
@@ -145,27 +163,15 @@ def cron():
 
 @bp.get("/results")
 def results():
-    activities = (
-        Activity.query.filter(
-            Activity.athlete_id.isnot(None),
-            Activity.start_date.isnot(None),
-        )
-        .order_by(Activity.athlete_id, Activity.id)
-        .all()
-    )
-    by_athlete = defaultdict(list)
-    for a in activities:
-        by_athlete[a.athlete_id].append(a)
-
+    points_by = _points_by_athlete_strava_id()
     rows = []
-    for athlete_id, acts in by_athlete.items():
+    for athlete_id, pts in points_by.items():
         athelete = Athelete.query.filter_by(athlete_id=athlete_id).first()
         if athelete:
             fn = athelete.firstname or ""
             ln = athelete.lastname or ""
         else:
             fn, ln = "", ""
-        pts = activities_total_points(acts)
         rows.append(
             {
                 "firstname": fn,
@@ -200,6 +206,7 @@ def atheletes():
         .all()
     )
     dev_ids = current_app.config["APP_DEVELOPER_IDS"]
+    points_by = _points_by_athlete_strava_id()
     table_rows = [
         {
             "athelete_pk": a.id,
@@ -207,6 +214,7 @@ def atheletes():
             "name": athlete_display_name(a.firstname or "", a.lastname or ""),
             "hub": (a.hub or "").strip() or "—",
             "department": (a.department or "").strip() or "—",
+            "score": points_by.get(int(a.athlete_id), 0),
             "is_organiser": bool(a.is_organiser),
             "is_app_developer": int(a.athlete_id) in dev_ids,
         }
