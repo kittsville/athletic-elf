@@ -9,6 +9,7 @@ from urllib.parse import quote, urlencode
 import requests as http_client
 from flask import (
     Flask,
+    g,
     jsonify,
     redirect,
     render_template,
@@ -50,6 +51,14 @@ OAUTH_SCOPES = "read,activity:read,profile:read_all"
 
 SESSION_COOKIE_NAME = "elf_session"
 SESSION_TTL = timedelta(hours=48)
+
+# Flask endpoint names (view function names) that require a valid session cookie.
+_ENDPOINTS_REQUIRING_SESSION = frozenset({"delete_my_data"})
+
+# No session/cookie DB work for Strava webhooks or the cron job.
+_ENDPOINTS_SKIP_SESSION_LOOKUP = frozenset(
+    {"webhook_get", "webhook_post", "cron"}
+)
 
 
 def _parse_app_developer_ids() -> frozenset[int]:
@@ -172,6 +181,19 @@ def _current_athlete_from_request() -> Athelete | None:
 
 with app.app_context():
     db.create_all()
+
+
+@app.before_request
+def _attach_session_athlete():
+    if request.endpoint in _ENDPOINTS_SKIP_SESSION_LOOKUP:
+        g.current_athlete = None
+        return
+    g.current_athlete = _current_athlete_from_request()
+    if (
+        request.endpoint in _ENDPOINTS_REQUIRING_SESSION
+        and g.current_athlete is None
+    ):
+        return redirect(url_for("index"))
 
 
 def _list_push_subscriptions():
@@ -321,7 +343,7 @@ def webhook_post():
 
 @app.get("/")
 def index():
-    athlete = _current_athlete_from_request()
+    athlete = g.current_athlete
     if athlete is None:
         return render_template("index.html", logged_in=False)
     strava_id = int(athlete.athlete_id)
@@ -352,9 +374,7 @@ def index():
 
 @app.post("/delete-my-data")
 def delete_my_data():
-    athlete = _current_athlete_from_request()
-    if athlete is None:
-        return redirect(url_for("index"))
+    athlete = g.current_athlete
     pk = athlete.id
     strava_athlete_id = athlete.athlete_id
     BrowserSession.query.filter_by(athelete_id=pk).delete(synchronize_session=False)
