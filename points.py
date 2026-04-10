@@ -40,10 +40,25 @@ def activities_total_points(activities):
     """
     Total integer points for a user's activities using distance (meters),
     moving_time (seconds), sport_type, and start_date (for easy-fitness daily cap).
+
+    Distance-based categories (cycling, running, walking, swimming): distances are
+    summed within the category, then thresholds applied once (e.g. total cycling
+    meters // 5000).
+
+    Hard fitness: total moving time summed across hard-fitness activities, then
+    // 900 seconds per point.
+
+    Easy fitness: per calendar day (from start_date), total moving time summed,
+    points = min(total // 1800, 5).
+
     Activities without a recognized sport_type contribute 0.
     """
-    total = 0
-    easy_points_by_day = defaultdict(int)
+    sum_cycling = 0.0
+    sum_running = 0.0
+    sum_walking = 0.0
+    sum_swim = 0.0
+    sum_hard_time = 0
+    easy_time_by_day = defaultdict(int)
 
     for a in activities:
         st = a.sport_type
@@ -55,21 +70,28 @@ def activities_total_points(activities):
         if st in _SCORE_EASY_FITNESS:
             if a.start_date is not None:
                 day = a.start_date.date()
-                easy_points_by_day[day] += mt // _SECONDS_PER_EASY_POINT
+                easy_time_by_day[day] += mt
             continue
 
         if st in _SCORE_CYCLING:
-            total += int(dist // 5000)
+            sum_cycling += dist
         elif st in _SCORE_RUNNING:
-            total += int(dist // 1600)
+            sum_running += dist
         elif st in _SCORE_WALKING:
-            total += int(dist // 2000)
+            sum_walking += dist
         elif st in _SCORE_SWIMMING:
-            total += int(dist // 400)
+            sum_swim += dist
         elif st in _SCORE_HARD_FITNESS:
-            total += mt // _SECONDS_PER_HARD_POINT
+            sum_hard_time += mt
 
-    for _day, day_easy in easy_points_by_day.items():
-        total += min(day_easy, _EASY_FITNESS_DAILY_CAP)
+    total = 0
+    total += int(sum_cycling // 5000)
+    total += int(sum_running // 1600)
+    total += int(sum_walking // 2000)
+    total += int(sum_swim // 400)
+    total += sum_hard_time // _SECONDS_PER_HARD_POINT
+
+    for _day, mt_day in easy_time_by_day.items():
+        total += min(mt_day // _SECONDS_PER_EASY_POINT, _EASY_FITNESS_DAILY_CAP)
 
     return total
