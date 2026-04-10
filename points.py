@@ -1,9 +1,7 @@
 from collections import defaultdict
 
 # Strava DetailedActivity.sport_type values (see Strava API) -> scoring category
-_SCORE_CYCLING = frozenset(
-    {"Ride", "VirtualRide", "MountainBikeRide", "GravelRide"}
-)
+_SCORE_CYCLING = frozenset({"Ride", "VirtualRide", "MountainBikeRide", "GravelRide"})
 _SCORE_RUNNING = frozenset({"Run", "VirtualRun"})
 _SCORE_WALKING = frozenset({"Walk", "Hike", "Golf"})
 _SCORE_SWIMMING = frozenset({"Swim"})
@@ -28,7 +26,18 @@ _SCORE_HARD_FITNESS = frozenset(
 )
 # Table types intersected with Strava sport_type enum (Stretching/Cricket/Dance etc. omitted)
 _SCORE_EASY_FITNESS = frozenset(
-    {"Yoga", "Pilates", "TableTennis", "Badminton", "Windsurf", "Kitesurf", "Sail", "Basketball", "Volleyball", "Padel"}
+    {
+        "Yoga",
+        "Pilates",
+        "TableTennis",
+        "Badminton",
+        "Windsurf",
+        "Kitesurf",
+        "Sail",
+        "Basketball",
+        "Volleyball",
+        "Padel",
+    }
 )
 
 _EASY_FITNESS_DAILY_CAP = 5

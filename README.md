@@ -31,6 +31,12 @@ docker compose up -d
 pip install -r requirements.txt
 ```
 
+That file is **not** merged with anything else automatically. For optional dev tooling (e.g. [Ruff](https://docs.astral.sh/ruff/) to match CI formatting checks), install explicitly:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
 ### Environment variables
 
 | Variable             | Required | Default                                              | Description |
@@ -63,6 +69,8 @@ python -m unittest discover -s tests -v
 ```
 
 This matches the [GitHub Actions workflow](.github/workflows/tests.yml). The suite does not require Postgres or Strava credentials.
+
+CI also runs **`ruff format --check .`** (see the **`format`** job in that workflow). To run the same check locally, install **`requirements-dev.txt`** and run **`ruff format --check .`**; use **`ruff format .`** to apply the project’s formatting.
 
 ## Endpoints
 

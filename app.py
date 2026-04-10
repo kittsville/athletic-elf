@@ -270,9 +270,7 @@ def webhook_post():
             if owner_id is None:
                 print("webhook activity create missing owner_id; skipping insert")
             else:
-                db.session.add(
-                    Activity(activity_id=activity_id, athlete_id=owner_id)
-                )
+                db.session.add(Activity(activity_id=activity_id, athlete_id=owner_id))
                 db.session.commit()
         elif body.get("aspect_type") == "delete":
             Activity.query.filter_by(activity_id=activity_id).delete()
