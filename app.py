@@ -1,12 +1,21 @@
+import hashlib
 import logging
 import os
 import secrets
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote, urlencode
 
 import requests as http_client
-from flask import Flask, redirect, render_template, request, jsonify, session
+from flask import (
+    Flask,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+)
 from flask_sqlalchemy import SQLAlchemy
 
 from points import activities_total_points
@@ -38,6 +47,9 @@ STRAVA_OAUTH_TOKEN = "https://www.strava.com/oauth/token"
 
 # Scopes: read (profile), activity:read for activity details + webhooks for non-private activities
 OAUTH_SCOPES = "read,activity:read,profile:read_all"
+
+SESSION_COOKIE_NAME = "elf_session"
+SESSION_TTL = timedelta(hours=48)
 
 
 def _domain_base() -> str:
@@ -87,6 +99,35 @@ class Activity(db.Model):
     sport_type = db.Column(db.String(255), nullable=True)
     start_date = db.Column(db.DateTime, nullable=True)
     moving_time = db.Column(db.Integer, nullable=True)
+
+
+class BrowserSession(db.Model):
+    """Persistent browser session row; cookie holds the secret, DB stores its hash."""
+
+    __tablename__ = "session"
+    id = db.Column(db.Integer, primary_key=True)
+    athelete_id = db.Column(
+        db.Integer, db.ForeignKey("athelete.id"), nullable=False, index=True
+    )
+    hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+
+def _hash_session_token(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def _create_browser_session(athelete_pk: int) -> tuple[str, datetime]:
+    raw = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + SESSION_TTL
+    db.session.add(
+        BrowserSession(
+            athelete_id=athelete_pk,
+            hash=_hash_session_token(raw),
+            expires_at=expires_at,
+        )
+    )
+    return raw, expires_at
 
 
 with app.app_context():
@@ -281,7 +322,6 @@ def oauth_callback():
     if not code:
         return "Missing authorization code", 400
 
-    redirect_uri = _oauth_redirect_uri()
     token_resp = http_client.post(
         STRAVA_OAUTH_TOKEN,
         data={
@@ -319,8 +359,6 @@ def oauth_callback():
         row.expires_at = data["expires_at"]
         new_registration = False
 
-    db.session.commit()
-
     if new_registration:
         app.logger.info(
             "New athlete registered via OAuth: athlete_id=%s firstname=%s lastname=%s",
@@ -336,23 +374,47 @@ def oauth_callback():
             lastname,
         )
 
+    db.session.flush()
+    session_token, session_expires = _create_browser_session(row.id)
+    db.session.commit()
+
     try:
         _ensure_push_subscription()
     except Exception as ex:
         print(f"push subscription (may already exist): {ex}")
 
-    return (
+    body = (
         f"Registered athlete {aid} ({_athlete_display_name(firstname, lastname)}). "
-        "Webhook subscription created if this was the first registration for this app.",
-        200,
+        "Webhook subscription created if this was the first registration for this app."
     )
+    resp = make_response(body, 200)
+    resp.set_cookie(
+        SESSION_COOKIE_NAME,
+        session_token,
+        max_age=int(SESSION_TTL.total_seconds()),
+        expires=session_expires,
+        httponly=True,
+        samesite="Lax",
+        secure=request.is_secure,
+        path="/",
+    )
+    return resp
 
 
 @app.post("/cron")
 def cron():
+    now = datetime.now(timezone.utc)
+    removed_sessions = BrowserSession.query.filter(
+        BrowserSession.expires_at < now
+    ).delete(synchronize_session=False)
     n = process_activities(10)
     db.session.commit()
-    return f"Processed {n} activities", 200
+    summary = f"Processed {n} activities, removed {removed_sessions} expired session(s)"
+    app.logger.info(summary)
+    return (
+        summary,
+        200,
+    )
 
 
 @app.get("/results")
