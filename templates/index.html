@@ -10,6 +10,8 @@
     dd { margin: 0.25rem 0 1rem 0; }
     a { color: #06c; }
     button { font: inherit; padding: 0.4rem 0.75rem; cursor: pointer; margin-top: 0.5rem; }
+    .actions { margin-top: 1rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+    .danger { color: #b00020; border-color: #b00020; }
   </style>
 </head>
 <body>
@@ -24,9 +26,18 @@
       <dt>Role</dt>
       <dd>{% if is_app_developer %}App developer{% else %}Regular user{% endif %}</dd>
     </dl>
-    <form method="post" action="{{ url_for('logout') }}">
-      <button type="submit">Log out</button>
-    </form>
+    <div class="actions">
+      <form
+        method="post"
+        action="{{ url_for('delete_my_data') }}"
+        onsubmit="return confirm('This permanently deletes all stored activities, sessions, and your account data in this app. Continue?');"
+      >
+        <button type="submit" class="danger">Delete all my data</button>
+      </form>
+      <form method="post" action="{{ url_for('logout') }}">
+        <button type="submit">Log out</button>
+      </form>
+    </div>
   {% else %}
     <p>You are not signed in.</p>
     <p><a href="/oauth/start">Connect with Strava</a></p>

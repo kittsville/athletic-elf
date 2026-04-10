@@ -330,6 +330,33 @@ def index():
     )
 
 
+@app.post("/delete-my-data")
+def delete_my_data():
+    athlete = _current_athlete_from_request()
+    if athlete is None:
+        return redirect(url_for("index"))
+    pk = athlete.id
+    strava_athlete_id = athlete.athlete_id
+    BrowserSession.query.filter_by(athelete_id=pk).delete(synchronize_session=False)
+    Activity.query.filter_by(athlete_id=strava_athlete_id).delete(
+        synchronize_session=False
+    )
+    Athelete.query.filter_by(id=pk).delete(synchronize_session=False)
+    db.session.commit()
+    resp = redirect(url_for("index"))
+    resp.set_cookie(
+        SESSION_COOKIE_NAME,
+        "",
+        max_age=0,
+        expires=0,
+        httponly=True,
+        samesite="Lax",
+        secure=request.is_secure,
+        path="/",
+    )
+    return resp
+
+
 @app.post("/logout")
 def logout():
     token = request.cookies.get(SESSION_COOKIE_NAME)
