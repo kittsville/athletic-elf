@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>All athletes</title>
+  {% if config.APP_FAVICON %}
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
+  {% endif %}
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+    a { color: #06c; }
+    button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; max-width: 64rem; font-size: 0.95rem; }
+    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid #ddd; }
+    th { font-weight: 600; background: #f6f6f6; }
+    tbody tr:hover { background: #fafafa; }
+    .muted { color: #555; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <p><a href="{{ url_for('main.index') }}">← Home</a></p>
+  <h1>All athletes</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Hub</th>
+        <th>Department</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{{ row.athlete_id }}</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.hub }}</td>
+        <td>{{ row.department }}</td>
+        <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser) }}</td>
+        <td>
+          {% if row.is_organiser or row.is_app_developer %}
+            <span class="muted">—</span>
+          {% else %}
+            <form
+              method="post"
+              action="{{ url_for('main.atheletes_make_organiser', athelete_pk=row.athelete_pk) }}"
+              style="display: inline;"
+            >
+              <button type="submit">Make Organiser</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

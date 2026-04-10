@@ -15,6 +15,7 @@ from flask import (
     url_for,
 )
 from points import activities_total_points
+from sqlalchemy.orm import load_only
 
 from ..extensions import db
 from ..models import Activity, Athelete, BrowserSession
@@ -27,6 +28,12 @@ from ..utils import (
 )
 
 bp = Blueprint("main", __name__)
+
+
+def _can_perform_atheletes_updates(athlete: Athelete) -> bool:
+    if athlete.is_organiser:
+        return True
+    return int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
 
 
 @bp.get("/")
@@ -58,6 +65,7 @@ def index():
         hub_display=hub_display,
         department_display=department_display,
         is_app_developer=is_app_developer,
+        is_organiser=bool(athlete.is_organiser),
         activities=activities,
         team_points=team_points,
         format_moving_time=format_moving_time,
@@ -169,3 +177,52 @@ def results():
 
     rows.sort(key=lambda r: (-r["points"], r["athlete_id"]))
     return render_template("results.html", rows=rows)
+
+
+@bp.get("/atheletes")
+def atheletes():
+    athlete = g.current_athlete
+    if not _can_perform_atheletes_updates(athlete):
+        abort(403)
+    atheletes = (
+        Athelete.query.options(
+            load_only(
+                Athelete.id,
+                Athelete.athlete_id,
+                Athelete.firstname,
+                Athelete.lastname,
+                Athelete.hub,
+                Athelete.department,
+                Athelete.is_organiser,
+            )
+        )
+        .order_by(Athelete.athlete_id.asc())
+        .all()
+    )
+    dev_ids = current_app.config["APP_DEVELOPER_IDS"]
+    table_rows = [
+        {
+            "athelete_pk": a.id,
+            "athlete_id": a.athlete_id,
+            "name": athlete_display_name(a.firstname or "", a.lastname or ""),
+            "hub": (a.hub or "").strip() or "—",
+            "department": (a.department or "").strip() or "—",
+            "is_organiser": bool(a.is_organiser),
+            "is_app_developer": int(a.athlete_id) in dev_ids,
+        }
+        for a in atheletes
+    ]
+    return render_template("atheletes.html", rows=table_rows)
+
+
+@bp.post("/atheletes/<int:athelete_pk>/make-organiser")
+def atheletes_make_organiser(athelete_pk: int):
+    actor = g.current_athlete
+    if not _can_perform_atheletes_updates(actor):
+        abort(403)
+    target = db.session.get(Athelete, athelete_pk)
+    if target is None:
+        abort(404)
+    target.is_organiser = True
+    db.session.commit()
+    return redirect(url_for("main.atheletes"))

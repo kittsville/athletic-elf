@@ -13,6 +13,7 @@ from .config import (
 )
 from .extensions import db
 from .session import current_athlete_from_request
+from .utils import athlete_role_label
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -44,6 +45,7 @@ def create_app(config_class: type = Config) -> Flask:
     app.logger.setLevel(logging.INFO)
 
     db.init_app(app)
+    app.add_template_global(athlete_role_label)
 
     from . import models  # noqa: F401 — register models with SQLAlchemy
 
@@ -54,7 +56,12 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(webhook.bp)
 
     endpoints_requiring_session = frozenset(
-        {"main.delete_my_data", "main.hub_department_form"}
+        {
+            "main.delete_my_data",
+            "main.hub_department_form",
+            "main.atheletes",
+            "main.atheletes_make_organiser",
+        }
     )
     endpoints_skip_session_lookup = frozenset(
         {"webhook.webhook_get", "webhook.webhook_post", "main.cron"}

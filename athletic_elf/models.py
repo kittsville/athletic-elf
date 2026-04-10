@@ -14,6 +14,7 @@ class Athelete(db.Model):
     expires_at = db.Column(db.Integer, nullable=False)
     hub = db.Column(db.String(255), nullable=True, index=True)
     department = db.Column(db.String(255), nullable=True, index=True)
+    is_organiser = db.Column(db.Boolean, nullable=False, default=False)
 
 
 class Activity(db.Model):

@@ -35,7 +35,7 @@
       <dt>Name</dt>
       <dd>{{ name }}</dd>
       <dt>Role</dt>
-      <dd>{% if is_app_developer %}App developer{% else %}Regular user{% endif %}</dd>
+      <dd>{{ athlete_role_label(is_app_developer, is_organiser) }}</dd>
       <dt>Hub</dt>
       <dd>{{ hub_display }}</dd>
       <dt>Department</dt>
@@ -92,7 +92,7 @@
       <form
         method="post"
         action="{{ url_for('main.delete_my_data') }}"
-        onsubmit="return confirm('This permanently deletes all stored activities, sessions, and your account data in this app. Continue?');"
+        onsubmit="return confirm('This permanently deletes all stored activities, sessions, and your account data in this app. Your Strava account will not be affected. Continue?');"
       >
         <button type="submit" class="danger">Delete all my data</button>
       </form>
