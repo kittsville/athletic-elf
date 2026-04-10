@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from urllib.parse import quote, urlencode
 
 import requests as http_client
-from flask import Flask, redirect, render_template_string, request, jsonify, session
+from flask import Flask, redirect, render_template, request, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 
 from points import activities_total_points
@@ -318,39 +318,6 @@ def cron():
     return f"Processed {n} activities", 200
 
 
-_RESULTS_PAGE = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Results</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 2rem; }
-    table { border-collapse: collapse; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem 1rem; text-align: left; }
-    th { background: #f5f5f5; }
-    tr:nth-child(even) { background: #fafafa; }
-  </style>
-</head>
-<body>
-  <h1>Points by athlete</h1>
-  <table>
-    <thead><tr><th>Username</th><th>Athlete ID</th><th>Points</th></tr></thead>
-    <tbody>
-    {% for row in rows %}
-      <tr>
-        <td>{{ row.username }}</td>
-        <td>{{ row.athlete_id }}</td>
-        <td>{{ row.points }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</body>
-</html>
-"""
-
-
 @app.get("/results")
 def results():
     activities = (
@@ -383,7 +350,7 @@ def results():
         )
 
     rows.sort(key=lambda r: (-r["points"], r["athlete_id"]))
-    return render_template_string(_RESULTS_PAGE, rows=rows)
+    return render_template("results.html", rows=rows)
 
 
 if __name__ == "__main__":
