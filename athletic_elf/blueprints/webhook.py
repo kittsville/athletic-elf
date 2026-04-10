@@ -1,6 +1,6 @@
 """Strava push subscription webhook."""
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from ..extensions import db
 from ..models import Activity, Athelete
@@ -9,7 +9,7 @@ bp = Blueprint("webhook", __name__)
 
 
 def _challenge_response():
-    cfg = request.app.config
+    cfg = current_app.config
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")

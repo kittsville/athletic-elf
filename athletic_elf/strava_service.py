@@ -118,16 +118,53 @@ def list_push_subscriptions():
     return []
 
 
+def _normalize_webhook_callback_url(url: str | None) -> str:
+    u = (url or "").strip().rstrip("/")
+    if not u:
+        return ""
+    if not u.startswith("http"):
+        u = f"https://{u}"
+    return u
+
+
+def delete_push_subscription(subscription_id: int) -> None:
+    cfg = current_app.config
+    r = http_client.delete(
+        f"{cfg['STRAVA_API_BASE']}/push_subscriptions/{subscription_id}",
+        params={"client_id": cfg["CLIENT_ID"], "client_secret": cfg["CLIENT_SECRET"]},
+    )
+    r.raise_for_status()
+
+
 def ensure_push_subscription():
     """
     Strava allows one push subscription per application. Callback is /webhook;
     each event includes owner_id in the JSON body.
+
+    If a subscription already exists but points at a different callback URL than
+    DOMAIN implies, it is deleted and recreated so the app stays aligned with config.
     """
     cfg = current_app.config
+    callback_url = f"{domain_base()}/webhook"
+    expected = _normalize_webhook_callback_url(callback_url)
+    replaced_previous = False
     subs = list_push_subscriptions()
     if subs:
-        return subs[0].get("id")
-    callback_url = f"{domain_base()}/webhook"
+        existing = subs[0]
+        sid = existing.get("id")
+        listed = _normalize_webhook_callback_url(
+            existing.get("callback_url") if isinstance(existing, dict) else None
+        )
+        if sid is not None and listed == expected:
+            return sid
+        if sid is not None:
+            current_app.logger.info(
+                "Replacing Strava push subscription: callback was %r, expected %r",
+                listed or existing.get("callback_url"),
+                expected,
+            )
+            delete_push_subscription(int(sid))
+            replaced_previous = True
     r = http_client.post(
         f"{cfg['STRAVA_API_BASE']}/push_subscriptions",
         data={
@@ -139,7 +176,18 @@ def ensure_push_subscription():
     )
     r.raise_for_status()
     created = r.json()
-    return created.get("id")
+    new_id = created.get("id")
+    if replaced_previous:
+        current_app.logger.info(
+            "Strava push subscription created id=%s (replaced previous subscription)",
+            new_id,
+        )
+    else:
+        current_app.logger.info(
+            "Strava push subscription created id=%s (new subscription)",
+            new_id,
+        )
+    return new_id
 
 
 def maybe_refresh_athlete_token(athlete: Athelete) -> None:
