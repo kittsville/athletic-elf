@@ -60,6 +60,13 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
     return int(dt.timestamp())
 
 
+def _env_bool(name: str, *, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 def _secret_key_from_env() -> str:
     """Flask session signing key; must be a long random value from SECRET_KEY in production."""
     raw = os.environ.get("SECRET_KEY", "").strip()
@@ -82,6 +89,12 @@ class Config:
         "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
     ).replace("postgres://", "postgresql://")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # When true, create_app() calls db.create_all(). Disabled by default in production so
+    # multiple booting instances do not race on DDL; use `flask init-db` or a release job.
+    AUTO_CREATE_TABLES = _env_bool(
+        "AUTO_CREATE_TABLES",
+        default=os.environ.get("FLASK_ENV") != "production",
+    )
 
     VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "STRAVA")
     CLIENT_ID = os.getenv("CLIENT_ID")

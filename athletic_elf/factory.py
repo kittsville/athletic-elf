@@ -3,6 +3,7 @@
 import logging
 import os
 
+import click
 from flask import Flask, g, redirect, request, url_for
 
 from .config import (
@@ -83,7 +84,15 @@ def create_app(config_class: type = Config) -> Flask:
         ):
             return redirect(url_for("main.index"))
 
-    with app.app_context():
-        db.create_all()
+    @app.cli.command("init-db")
+    def init_db_command() -> None:
+        """Create database tables. Run once per deploy (release phase / job), not per web worker."""
+        with app.app_context():
+            db.create_all()
+        click.echo("init-db: tables created if missing.")
+
+    if app.config.get("AUTO_CREATE_TABLES"):
+        with app.app_context():
+            db.create_all()
 
     return app

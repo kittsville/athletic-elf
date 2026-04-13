@@ -15,6 +15,7 @@ class _TestHubDeptConfig(Config):
 
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-hub-dept-tests-xx"
+    AUTO_CREATE_TABLES = True
     # Fixed options so tests do not depend on HUB_OPTIONS / DEPARTMENT_OPTIONS in os.environ.
     HUB_OPTIONS = ("North Hub", "South Hub", "East Hub", "West Hub")
     DEPARTMENT_OPTIONS = ("Engineering", "Sales", "Marketing", "Operations")
