@@ -179,14 +179,7 @@ def gdpr():
 @bp.post("/delete-my-data")
 def delete_my_data():
     athlete = g.current_athlete
-    strava_athlete_id = athlete.athlete_id
-    BrowserSession.query.filter_by(athlete_id=strava_athlete_id).delete(
-        synchronize_session=False
-    )
-    Activity.query.filter_by(athlete_id=strava_athlete_id).delete(
-        synchronize_session=False
-    )
-    Athelete.query.filter_by(athlete_id=strava_athlete_id).delete(
+    Athelete.query.filter_by(athlete_id=athlete.athlete_id).delete(
         synchronize_session=False
     )
     db.session.commit()
