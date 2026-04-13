@@ -74,7 +74,7 @@ class TestHubDepartmentForm(unittest.TestCase):
             )
             db.session.add(a)
             db.session.flush()
-            raw, _ = create_browser_session(a.id)
+            raw, _ = create_browser_session(int(a.athlete_id))
             db.session.commit()
             return a, raw
 

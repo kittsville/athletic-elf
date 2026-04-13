@@ -5,8 +5,7 @@ from .extensions import db
 
 class Athelete(db.Model):
     __tablename__ = "athelete"
-    id = db.Column(db.Integer, primary_key=True)
-    athlete_id = db.Column(db.BigInteger, nullable=False, unique=True)
+    athlete_id = db.Column(db.BigInteger, primary_key=True)
     firstname = db.Column(db.String(255), nullable=False, default="")
     lastname = db.Column(db.String(255), nullable=False, default="")
     access_token = db.Column(db.Text, nullable=False)
@@ -21,7 +20,9 @@ class Activity(db.Model):
     __tablename__ = "activity"
     id = db.Column(db.Integer, primary_key=True)
     activity_id = db.Column(db.BigInteger, nullable=False, unique=True)
-    athlete_id = db.Column(db.BigInteger, nullable=True, index=True)
+    athlete_id = db.Column(
+        db.BigInteger, db.ForeignKey("athelete.athlete_id"), nullable=True, index=True
+    )
     distance = db.Column(db.Float, nullable=True)
     sport_type = db.Column(db.String(255), nullable=True)
     start_date = db.Column(db.DateTime, nullable=True)
@@ -33,8 +34,8 @@ class BrowserSession(db.Model):
 
     __tablename__ = "session"
     id = db.Column(db.Integer, primary_key=True)
-    athelete_id = db.Column(
-        db.Integer, db.ForeignKey("athelete.id"), nullable=False, index=True
+    athlete_id = db.Column(
+        db.BigInteger, db.ForeignKey("athelete.athlete_id"), nullable=False, index=True
     )
     hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)

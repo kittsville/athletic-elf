@@ -179,13 +179,16 @@ def gdpr():
 @bp.post("/delete-my-data")
 def delete_my_data():
     athlete = g.current_athlete
-    pk = athlete.id
     strava_athlete_id = athlete.athlete_id
-    BrowserSession.query.filter_by(athelete_id=pk).delete(synchronize_session=False)
+    BrowserSession.query.filter_by(athlete_id=strava_athlete_id).delete(
+        synchronize_session=False
+    )
     Activity.query.filter_by(athlete_id=strava_athlete_id).delete(
         synchronize_session=False
     )
-    Athelete.query.filter_by(id=pk).delete(synchronize_session=False)
+    Athelete.query.filter_by(athlete_id=strava_athlete_id).delete(
+        synchronize_session=False
+    )
     db.session.commit()
     session.pop(BROWSER_TOKEN_SESSION_KEY, None)
     return redirect(url_for("main.index"))
@@ -264,7 +267,6 @@ def atheletes():
     atheletes = (
         Athelete.query.options(
             load_only(
-                Athelete.id,
                 Athelete.athlete_id,
                 Athelete.firstname,
                 Athelete.lastname,
@@ -280,7 +282,7 @@ def atheletes():
     points_by = _points_by_athlete_strava_id()
     table_rows = [
         {
-            "athelete_pk": a.id,
+            "athelete_pk": a.athlete_id,
             "athlete_id": a.athlete_id,
             "name": athlete_display_name(a.firstname or "", a.lastname or ""),
             "hub": (a.hub or "").strip() or "—",

@@ -21,12 +21,12 @@ def hash_session_token(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def create_browser_session(athelete_pk: int) -> tuple[str, datetime]:
+def create_browser_session(athlete_id: int) -> tuple[str, datetime]:
     raw = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + _session_ttl()
     db.session.add(
         BrowserSession(
-            athelete_id=athelete_pk,
+            athlete_id=athlete_id,
             hash=hash_session_token(raw),
             expires_at=expires_at,
         )
@@ -47,4 +47,4 @@ def current_athlete_from_request() -> Athelete | None:
     )
     if bs is None:
         return None
-    return db.session.get(Athelete, bs.athelete_id)
+    return db.session.get(Athelete, bs.athlete_id)

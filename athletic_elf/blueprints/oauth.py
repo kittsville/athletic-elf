@@ -112,7 +112,7 @@ def oauth_callback():
         )
 
     db.session.flush()
-    session_token, _ = create_browser_session(row.id)
+    session_token, _ = create_browser_session(int(row.athlete_id))
     db.session.commit()
 
     try:
@@ -121,7 +121,9 @@ def oauth_callback():
         print(f"push subscription (may already exist): {ex}")
 
     if new_registration:
-        schedule_initial_activity_sync(current_app._get_current_object(), row.id)
+        schedule_initial_activity_sync(
+            current_app._get_current_object(), int(row.athlete_id)
+        )
 
     session.permanent = True
     session[BROWSER_TOKEN_SESSION_KEY] = session_token

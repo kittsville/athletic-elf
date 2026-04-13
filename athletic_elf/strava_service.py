@@ -31,7 +31,7 @@ def _apply_summary_activity_payload(
     row.moving_time = payload.get("moving_time")
 
 
-def sync_activities_since_competition_start(athlete_pk: int) -> int:
+def sync_activities_since_competition_start(athlete_id: int) -> int:
     """
     Paginate GET /athlete/activities with `after` = competition start epoch;
     upsert SummaryActivity rows for this athlete's Strava account.
@@ -41,15 +41,15 @@ def sync_activities_since_competition_start(athlete_pk: int) -> int:
     if after is None:
         current_app.logger.info(
             "ACTIVITY_START_DATE not set or invalid; skipping initial activity backfill "
-            "for athlete pk=%s",
-            athlete_pk,
+            "for athlete_id=%s",
+            athlete_id,
         )
         return 0
 
-    athlete = db.session.get(Athelete, athlete_pk)
+    athlete = db.session.get(Athelete, athlete_id)
     if athlete is None:
         current_app.logger.warning(
-            "Initial activity sync: no athlete row for pk=%s", athlete_pk
+            "Initial activity sync: no athlete row for athlete_id=%s", athlete_id
         )
         return 0
 
@@ -79,8 +79,8 @@ def sync_activities_since_competition_start(athlete_pk: int) -> int:
             break
         if not isinstance(batch, list):
             current_app.logger.error(
-                "Unexpected /athlete/activities response for athlete pk=%s: %r",
-                athlete_pk,
+                "Unexpected /athlete/activities response for athlete_id=%s: %r",
+                athlete_id,
                 batch,
             )
             break
