@@ -80,7 +80,7 @@ class Config:
     APP_FAVICON = os.getenv("APP_FAVICON", "").strip() or None
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
-    )
+    ).replace("postgres://", "postgresql://")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "STRAVA")
