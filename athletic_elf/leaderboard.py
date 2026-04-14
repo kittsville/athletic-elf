@@ -29,44 +29,43 @@ LEADERBOARD_SPECS: tuple[tuple[str, str, str, str, str], ...] = (
     (
         "shark",
         "The Shark",
-        "Most swimming km: for the pool sharks hitting those 400m intervals.",
+        "For the pool sharks hitting those 400m intervals.",
         "Swimming (km)",
         "swim_km",
     ),
     (
         "explorer",
         "The Explorer",
-        "Most walking km: for the high-volume steppers who never take the elevator.",
+        "For the high-volume steppers who never take the elevator.",
         "Walking (km)",
         "walk_km",
     ),
     (
         "powerhouse",
         "The Powerhouse",
-        "Most hard fitness minutes: for the heavy lifters, HIIT enthusiasts, and "
-        "football/basketball players.",
+        "For the heavy lifters, HIIT enthusiasts, and football/basketball players.",
         "Hard fitness (min)",
         "hard_min",
     ),
     (
         "centurion",
         "The Centurion",
-        "Most cycling km: for the road warriors and Peloton fans.",
+        "For the road warriors and Peloton fans.",
         "Cycling (km)",
         "cycle_km",
     ),
     (
         "marathoner",
         "The Marathoner",
-        "Most running km: for those putting in the pavement miles.",
+        "For those putting in the pavement miles.",
         "Running (km)",
         "run_km",
     ),
     (
         "zen",
         "The Zen Master",
-        "Most yoga or stretching minutes: for the mobility and recovery specialists.",
-        "Yoga / stretching (min)",
+        "For the mobility and recovery specialists.",
+        "Yoga / Pilates (min)",
         "zen_min",
     ),
     (
@@ -113,14 +112,23 @@ def leaderboard_sections() -> list[dict[str, object]]:
         stats_rows.append((aid, d, pts))
 
     def top10(stat_key: str) -> list[dict[str, object]]:
+        eligible: list[tuple[int, dict[str, float | int], int]] = []
+        for aid, d, pts in stats_rows:
+            if stat_key == "points":
+                if int(pts) <= 0:
+                    continue
+            elif float(d[stat_key]) <= 0:
+                continue
+            eligible.append((aid, d, pts))
+
         if stat_key == "points":
             ranked = sorted(
-                stats_rows,
+                eligible,
                 key=lambda t: (-int(t[2]), int(t[0])),
             )
         else:
             ranked = sorted(
-                stats_rows,
+                eligible,
                 key=lambda t: (-float(t[1][stat_key]), int(t[0])),
             )
         out: list[dict[str, object]] = []
@@ -132,8 +140,6 @@ def leaderboard_sections() -> list[dict[str, object]]:
             else:
                 stat_display = f"{int(d[stat_key])} min"
             out.append({"rank": rank, "name": _name(aid), "stat_display": stat_display})
-        while len(out) < 10:
-            out.append({"rank": len(out) + 1, "name": "—", "stat_display": "—"})
         return out
 
     return [

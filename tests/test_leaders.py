@@ -151,6 +151,69 @@ class TestLeadersPage(unittest.TestCase):
             r.data.find(b"Bob Wade"),
         )
 
+    def test_athlete_with_zero_for_category_absent_from_that_table(self):
+        browser_token = ""
+        with self.app.app_context():
+            db.session.add_all(
+                [
+                    Athlete(
+                        athlete_id=201,
+                        firstname="Swim",
+                        lastname="Only",
+                        access_token="a",
+                        refresh_token="r",
+                        expires_at=2_000_000_000,
+                    ),
+                    Athlete(
+                        athlete_id=202,
+                        firstname="Run",
+                        lastname="Only",
+                        access_token="a",
+                        refresh_token="r",
+                        expires_at=2_000_000_000,
+                    ),
+                    Activity(
+                        activity_id=1001,
+                        athlete_id=201,
+                        distance=1000,
+                        sport_type="Swim",
+                        start_date=_D0,
+                        moving_time=600,
+                    ),
+                    Activity(
+                        activity_id=1002,
+                        athlete_id=202,
+                        distance=5000,
+                        sport_type="Run",
+                        start_date=_D0,
+                        moving_time=600,
+                    ),
+                ]
+            )
+            db.session.commit()
+            browser_token, _ = create_browser_session(201)
+            db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = browser_token
+
+        r = self.client.get("/leaders")
+        self.assertEqual(r.status_code, 200)
+        shark_start = r.data.find(b'id="shark"')
+        explorer_start = r.data.find(b'id="explorer"')
+        marathoner_start = r.data.find(b'id="marathoner"')
+        zen_start = r.data.find(b'id="zen"')
+        self.assertGreater(shark_start, -1)
+        self.assertGreater(explorer_start, -1)
+        self.assertGreater(marathoner_start, -1)
+        self.assertGreater(zen_start, -1)
+        shark_html = r.data[shark_start:explorer_start]
+        self.assertIn(b"Swim Only", shark_html)
+        self.assertNotIn(b"Run Only", shark_html)
+        marathon_html = r.data[marathoner_start:zen_start]
+        self.assertIn(b"Run Only", marathon_html)
+        self.assertNotIn(b"Swim Only", marathon_html)
+
 
 if __name__ == "__main__":
     unittest.main()
