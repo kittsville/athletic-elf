@@ -15,6 +15,7 @@ class _LeadersTestConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-leaders-tests-xx"
     VERIFY_TOKEN = "test-verify-token-leaders"
+    ENFORCE_HTTPS = False
     CRON_SECRET = "test-cron-secret"
     AUTO_CREATE_TABLES = True
     HUB_OPTIONS = ("North Hub",)

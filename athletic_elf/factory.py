@@ -4,7 +4,7 @@ import logging
 import os
 
 import click
-from flask import Flask, g, redirect, request, url_for
+from flask import Flask, Response, current_app, g, redirect, request, url_for
 
 from .config import (
     Config,
@@ -15,6 +15,16 @@ from .config import (
 from .extensions import db
 from .session import current_athlete_from_request
 from .utils import athlete_role_label, format_moving_time
+
+
+def _request_is_https() -> bool:
+    """True if the active request is served over HTTPS (direct or via X-Forwarded-Proto)."""
+    if request.is_secure:
+        return True
+    forwarded = (
+        (request.headers.get("X-Forwarded-Proto") or "").split(",")[0].strip().lower()
+    )
+    return forwarded == "https"
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -29,6 +39,7 @@ def create_app(config_class: type = Config) -> Flask:
             "VERIFY_TOKEN must be set (environment variable or on the Flask Config class). "
             "It is used for Strava subscription validation and the webhook URL path."
         )
+    app.config["SESSION_COOKIE_SECURE"] = bool(app.config.get("ENFORCE_HTTPS"))
     app.config["APP_DEVELOPER_IDS"] = parse_app_developer_ids()
     app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_activity_start_epoch(
         app.config.get("ACTIVITY_START_DATE")
@@ -82,6 +93,18 @@ def create_app(config_class: type = Config) -> Flask:
     endpoints_skip_session_lookup = frozenset(
         {"webhook.webhook_get", "webhook.webhook_post", "cron.cron"}
     )
+
+    @app.before_request
+    def require_https_when_enforced():
+        if not current_app.config.get("ENFORCE_HTTPS"):
+            return None
+        if _request_is_https():
+            return None
+        return Response(
+            "This site must be accessed via HTTPS.\n",
+            status=403,
+            mimetype="text/plain",
+        )
 
     @app.before_request
     def attach_session_athlete():

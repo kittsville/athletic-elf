@@ -113,6 +113,15 @@ class Config:
     SESSION_TTL = timedelta(hours=48)
     PERMANENT_SESSION_LIFETIME = SESSION_TTL
 
+    # Reject plain-HTTP requests with 403 when True (default in production). Trusts
+    # X-Forwarded-Proto from a reverse proxy when present.
+    ENFORCE_HTTPS = _env_bool(
+        "ENFORCE_HTTPS",
+        default=os.environ.get("FLASK_ENV") == "production",
+    )
+    # SESSION_COOKIE_SECURE is applied in create_app() from the resolved ENFORCE_HTTPS flag.
+    SESSION_COOKIE_SAMESITE = "Lax"
+
     # ISO 8601: competition start (e.g. 2025-06-01T00:00:00Z). Used for backfill `after`.
     ACTIVITY_START_DATE = os.environ.get("ACTIVITY_START_DATE", "").strip() or None
     # Strava allows up to 200 per page for GET /athlete/activities.

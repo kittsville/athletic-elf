@@ -12,6 +12,7 @@ from athletic_elf.utils import strava_webhook_callback_url
 class _WebhookConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-webhook-tests-xx"
+    ENFORCE_HTTPS = False
     CRON_SECRET = "test-cron-secret"
     AUTO_CREATE_TABLES = True
     DOMAIN = "http://127.0.0.1:5000"
@@ -87,6 +88,7 @@ class TestCreateAppRequiresVerifyToken(unittest.TestCase):
     class _EmptyVerify(Config):
         SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
         SECRET_KEY = "test-secret-key-empty-verify-xx"
+        ENFORCE_HTTPS = False
         VERIFY_TOKEN = ""
 
     def test_create_app_raises_when_verify_token_empty(self):
@@ -101,6 +103,7 @@ class TestWebhookEncodedPathSegment(unittest.TestCase):
     class _Tok(Config):
         SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
         SECRET_KEY = "test-secret-key-webhook-encoded-xx"
+        ENFORCE_HTTPS = False
         CRON_SECRET = "test-cron-secret"
         AUTO_CREATE_TABLES = True
         DOMAIN = "http://127.0.0.1:5000"

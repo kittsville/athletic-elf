@@ -16,6 +16,7 @@ class _TestHubDeptConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-for-hub-dept-tests-xx"
     VERIFY_TOKEN = "test-verify-token-hub-dept"
+    ENFORCE_HTTPS = False
     CRON_SECRET = "test-cron-secret"
     AUTO_CREATE_TABLES = True
     # Fixed options so tests do not depend on HUB_OPTIONS / DEPARTMENT_OPTIONS in os.environ.

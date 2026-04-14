@@ -45,6 +45,7 @@ pip install -r requirements-dev.txt
 | `CLIENT_SECRET`      | Yes*     | —                                                    | Strava application secret |
 | `DOMAIN`             | Yes*     | —                                                    | Public base URL for OAuth redirect and webhooks (e.g. `https://yourapp.example` or `http://127.0.0.1:5000`). A scheme is added if omitted (`https://`). |
 | `SECRET_KEY`         | No       | `dev-change-me`                                      | Flask session secret for OAuth `state` (set in production) |
+| `ENFORCE_HTTPS`      | No       | `true` when **`FLASK_ENV=production`**, else `false` | When enabled: every request must be HTTPS ( **`403`** plain text if not); **`SESSION_COOKIE_SECURE`** is set to **`true`**. Behind a reverse proxy, ensure **`X-Forwarded-Proto: https`** is set. For local **`http://`** dev, set **`ENFORCE_HTTPS=0`**. |
 | `VERIFY_TOKEN`       | Yes      | —                                                    | Long random secret: used in the push subscription **`verify_token`** field, echoed by Strava on validation **GET** as **`hub.verify_token`**, and embedded (URL-encoded) as the final path segment of the webhook URL so **`POST /webhook/...`** is not guessable |
 | `CRON_SECRET`        | No†      | —                                                    | If unset, **`POST /cron`** returns **503**. If set, callers must send **`Authorization: Bearer <CRON_SECRET>`**. |
 | `DATABASE_URL`       | No       | `postgresql://strava:strava@localhost:5432/strava`    | Postgres connection string |
@@ -57,14 +58,16 @@ pip install -r requirements-dev.txt
 
 The app process will not start unless **`VERIFY_TOKEN`** is set ( **`create_app`** raises **`ValueError`** if it is missing or blank).
 
+The app always sets **`SESSION_COOKIE_SAMESITE = "Lax"`**. After loading config, **`create_app`** sets **`SESSION_COOKIE_SECURE`** from **`ENFORCE_HTTPS`** so session cookies are only sent over TLS when HTTPS is enforced.
+
 ### Run the app
 
 ```bash
-export CLIENT_ID=... CLIENT_SECRET=... DOMAIN=http://127.0.0.1:5000 VERIFY_TOKEN=...
+export CLIENT_ID=... CLIENT_SECRET=... DOMAIN=http://127.0.0.1:5000 VERIFY_TOKEN=... ENFORCE_HTTPS=0
 python app.py
 ```
 
-For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0.1`) and register the same host in your Strava API application settings.
+For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0.1`) and register the same host in your Strava API application settings. Use **`ENFORCE_HTTPS=0`** when using plain HTTP locally ( **`FLASK_ENV=production`** would otherwise default **`ENFORCE_HTTPS`** on and block **`http://`** ).
 
 ## Tests
 

@@ -14,6 +14,7 @@ class _CronDisabledConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SECRET_KEY = "test-secret-key-cron-disabled-xx"
     VERIFY_TOKEN = "test-verify-token-cron-disabled"
+    ENFORCE_HTTPS = False
     CRON_SECRET = None
     AUTO_CREATE_TABLES = True
     HUB_OPTIONS = ("North Hub",)
