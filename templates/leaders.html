@@ -2,6 +2,13 @@
 {% block title %}Discipline Leaders{% endblock %}
 {% block extra_head %}
   <style>
+    .leaders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+      gap: 1.75rem 1.25rem;
+      align-items: start;
+      margin-top: 1rem;
+    }
     table { border-collapse: collapse; width: 100%; max-width: 36rem; margin-top: 0.75rem; }
     th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; text-align: left; }
     th { background: #f5f5f5; }
@@ -10,14 +17,15 @@
     /* Medals via markup, not nth-row CSS: padded rows 2–3 must not show silver/bronze. */
     .rank-line { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.35rem; }
     .rank-line .medal { font-style: normal; }
-    section.leader-section { margin-bottom: 2.5rem; }
+    section.leader-section { min-width: 0; }
     section.leader-section h2 { margin: 0 0 0.35rem 0; font-size: 1.25rem; }
-    section.leader-section > p.desc { margin: 0; color: #444; max-width: 44rem; }
+    section.leader-section > p.desc { margin: 0; color: #444; }
     .leaders-empty { color: #555; margin: 0.5rem 0 0 0; }
   </style>
 {% endblock %}
 {% block content %}
   <h1>Discipline Leaders 🏆</h1>
+  <div class="leaders-grid">
   {% for section in sections %}
   <section class="leader-section" id="{{ section.slug }}" aria-labelledby="heading-{{ section.slug }}">
     <h2 id="heading-{{ section.slug }}">{{ section.title }}</h2>
@@ -53,4 +61,5 @@
     {% endif %}
   </section>
   {% endfor %}
+  </div>
 {% endblock %}
