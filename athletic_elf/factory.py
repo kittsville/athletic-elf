@@ -66,6 +66,8 @@ def create_app(config_class: type = Config) -> Flask:
             "main.results",
             "main.atheletes",
             "main.atheletes_make_organiser",
+            "main.bonuses",
+            "main.bonus_delete",
         }
     )
     endpoints_skip_session_lookup = frozenset(

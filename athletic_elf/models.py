@@ -45,3 +45,21 @@ class BrowserSession(db.Model):
     )
     hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+
+class Bonus(db.Model):
+    """Manual bonus points for weekly challenges (e.g. photo of the week)."""
+
+    __tablename__ = "bonus"
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    points = db.Column(db.Integer, nullable=False)
+    target = db.Column(db.String(255), nullable=False, index=True)
+    athlete_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("athelete.athlete_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    awardee = db.relationship("Athelete", foreign_keys=[athlete_id])

@@ -15,10 +15,10 @@ from flask import (
     url_for,
 )
 from points import activities_total_points, team_points
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import joinedload, load_only
 
 from ..extensions import db
-from ..models import Activity, Athelete, BrowserSession
+from ..models import Activity, Athelete, Bonus, BrowserSession
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..strava_service import process_activities
 from ..utils import (
@@ -69,11 +69,20 @@ def _summaries_by_hub_and_department(
         d = (a.department or "").strip()
         if d in dept_set:
             dept_member_points[d].append(pts)
+    hub_bonus: defaultdict[str, int] = defaultdict(int)
+    dept_bonus: defaultdict[str, int] = defaultdict(int)
+    for b in Bonus.query.all():
+        t = b.target.strip()
+        if t in hub_set:
+            hub_bonus[t] += int(b.points)
+        elif t in dept_set:
+            dept_bonus[t] += int(b.points)
+
     hub_rows = [
         {
             "name": h,
             "athlete_count": len(hub_member_points[h]),
-            "points": team_points(hub_member_points[h]),
+            "points": float(team_points(hub_member_points[h])) + hub_bonus.get(h, 0),
         }
         for h in hub_options
     ]
@@ -81,7 +90,7 @@ def _summaries_by_hub_and_department(
         {
             "name": d,
             "athlete_count": len(dept_member_points[d]),
-            "points": team_points(dept_member_points[d]),
+            "points": float(team_points(dept_member_points[d])) + dept_bonus.get(d, 0),
         }
         for d in department_options
     ]
@@ -300,3 +309,99 @@ def atheletes_make_organiser(athelete_pk: int):
     target.is_organiser = True
     db.session.commit()
     return redirect(url_for("main.atheletes"))
+
+
+def _bonuses_table_rows() -> list[dict[str, object]]:
+    rows = (
+        Bonus.query.options(joinedload(Bonus.awardee))
+        .order_by(Bonus.created_at.desc())
+        .all()
+    )
+    out: list[dict[str, object]] = []
+    for b in rows:
+        aw = b.awardee
+        out.append(
+            {
+                "bonus_id": b.id,
+                "created_at": b.created_at,
+                "name": b.name,
+                "points": b.points,
+                "target": b.target,
+                "awardee_name": athlete_display_name(
+                    aw.firstname or "", aw.lastname or ""
+                ),
+                "awardee_athlete_id": int(b.athlete_id),
+            }
+        )
+    return out
+
+
+@bp.route("/bonuses", methods=["GET", "POST"])
+def bonuses():
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    hubs = current_app.config["HUB_OPTIONS"]
+    departments = current_app.config["DEPARTMENT_OPTIONS"]
+    hub_set = frozenset(hubs)
+    dept_set = frozenset(departments)
+    error: str | None = None
+
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        raw_target = request.form.get("target") or ""
+        kind, _, target_value = raw_target.partition("|")
+        target_value = target_value.strip()
+        points_raw = (request.form.get("points") or "").strip()
+        resolved_target: str | None = None
+
+        if not name or len(name) > 255:
+            error = "Name is required and must be at most 255 characters."
+        else:
+            try:
+                points_val = int(points_raw)
+            except ValueError:
+                error = "Points must be an integer."
+            else:
+                if points_val < 1:
+                    error = "Points must be at least 1."
+                elif kind == "hub" and target_value in hub_set:
+                    resolved_target = target_value
+                elif kind == "department" and target_value in dept_set:
+                    resolved_target = target_value
+                else:
+                    error = "Target must be a hub or department from the configured lists."
+
+        if error is None and resolved_target is not None:
+            db.session.add(
+                Bonus(
+                    created_at=datetime.now(timezone.utc),
+                    name=name,
+                    points=points_val,
+                    target=resolved_target,
+                    athlete_id=actor.athlete_id,
+                )
+            )
+            db.session.commit()
+            return redirect(url_for("main.bonuses"))
+
+    return render_template(
+        "bonuses.html",
+        rows=_bonuses_table_rows(),
+        hub_options=hubs,
+        department_options=departments,
+        error=error,
+    )
+
+
+@bp.post("/bonuses/<int:bonus_id>/delete")
+def bonus_delete(bonus_id: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    row = db.session.get(Bonus, bonus_id)
+    if row is None:
+        abort(404)
+    db.session.delete(row)
+    db.session.commit()
+    return redirect(url_for("main.bonuses"))

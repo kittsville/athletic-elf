@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Bonuses{% endblock %}
+{% block extra_head %}
+  <style>
+    button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; max-width: 64rem; font-size: 0.95rem; }
+    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid #ddd; }
+    th { font-weight: 600; background: #f6f6f6; }
+    tbody tr:hover { background: #fafafa; }
+    .muted { color: #555; font-size: 0.9rem; }
+    .bonuses-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 44rem; }
+    .bonus-form { margin-top: 2rem; max-width: 32rem; border-top: 1px solid #ddd; padding-top: 1.25rem; }
+    .bonus-form label { display: block; margin: 0.65rem 0 0.2rem 0; font-weight: 600; }
+    .bonus-form input, .bonus-form select { font: inherit; width: 100%; max-width: 24rem; box-sizing: border-box; padding: 0.35rem 0.5rem; }
+    .bonus-form button { margin-top: 1rem; }
+    .error-msg { color: #a30; margin: 0 0 1rem 0; max-width: 40rem; }
+  </style>
+{% endblock %}
+{% block content %}
+  <h1>Bonuses</h1>
+  {% if error %}
+    <p class="error-msg" role="alert">{{ error }}</p>
+  {% endif %}
+  <table>
+    <thead>
+      <tr>
+        <th>Created</th>
+        <th>Name</th>
+        <th>Points</th>
+        <th>Target</th>
+        <th>Awarded by</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{{ row.created_at.strftime("%Y-%m-%d %H:%M") }} UTC</td>
+        <td>{{ row.name }}</td>
+        <td>{{ row.points }}</td>
+        <td>{{ row.target }}</td>
+        <td title="Athlete ID: {{ row.awardee_athlete_id }}">{{ row.awardee_name }}</td>
+        <td>
+          <form
+            method="post"
+            action="{{ url_for('main.bonus_delete', bonus_id=row.bonus_id) }}"
+            style="display: inline;"
+          >
+            <button type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    {% if not rows %}
+      <tr><td colspan="6" class="muted">No bonuses yet.</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+
+  <section class="bonus-form" aria-labelledby="add-bonus-heading">
+    <h2 id="add-bonus-heading" style="font-size: 1.1rem; margin: 0 0 0.5rem 0;">Add bonus</h2>
+    <form method="post" action="{{ url_for('main.bonuses') }}">
+      <label for="bonus-name">Name</label>
+      <input id="bonus-name" name="name" type="text" maxlength="255" required autocomplete="off">
+
+      <label for="bonus-points">Points</label>
+      <input id="bonus-points" name="points" type="number" min="1" step="1" required>
+
+      <label for="bonus-target">Target (hub or department)</label>
+      <select id="bonus-target" name="target" required>
+        <option value="" disabled selected>— Select —</option>
+        <optgroup label="Hubs">
+          {% for h in hub_options %}
+            <option value="hub|{{ h }}">{{ h }}</option>
+          {% endfor %}
+        </optgroup>
+        <optgroup label="Departments">
+          {% for d in department_options %}
+            <option value="department|{{ d }}">{{ d }}</option>
+          {% endfor %}
+        </optgroup>
+      </select>
+
+      <button type="submit">Add bonus</button>
+    </form>
+  </section>
+
+  <p class="bonuses-note">Only organisers and app developers can view this page. Bonus points count toward hub and department totals on the Results page.</p>
+{% endblock %}
