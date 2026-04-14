@@ -127,7 +127,7 @@ class TestHardFitnessRow(unittest.TestCase):
     """Hard fitness: 15 min = 1 pt."""
 
     def test_each_hard_fitness_one_point(self):
-        # Strava sport_type names (Basketball, Volleyball, Padel not in API enum)
+        # Strava sport_type names (see Strava DetailedActivity.sport_type)
         sports = (
             "WeightTraining",
             "Crossfit",
@@ -144,6 +144,7 @@ class TestHardFitnessRow(unittest.TestCase):
             "Canoeing",
             "Surfing",
             "InlineSkate",
+            "Basketball",
         )
         moving_time = 15 * 60
         for sport_type in sports:
@@ -172,7 +173,6 @@ class TestEasyFitnessRow(unittest.TestCase):
             "Windsurf",
             "Kitesurf",
             "Sail",
-            "Basketball",
             "Volleyball",
             "Padel",
         )

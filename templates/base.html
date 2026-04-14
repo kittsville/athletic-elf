@@ -40,10 +40,11 @@
 <body>
   <div class="dev-banner" role="status">App under development. Scores reset when competition begins</div>
   {% block app_nav %}
-  {% if g.current_athlete %}
-  <nav class="app-nav" aria-label="Account">
+  <nav class="app-nav" aria-label="Main">
     <ul>
       <li><a href="{{ url_for('main.index') }}">Home</a></li>
+      {% if g.current_athlete %}
+      <li><a href="{{ url_for('main.leaders') }}">Leaders</a></li>
       <li><a href="{{ url_for('main.results') }}">Results</a></li>
       {% if show_organiser_nav %}
       <li><a href="{{ url_for('main.athletes') }}">All athletes</a></li>
@@ -55,9 +56,9 @@
           <button type="submit">Log out</button>
         </form>
       </li>
+      {% endif %}
     </ul>
   </nav>
-  {% endif %}
   {% endblock %}
   <main class="page">
     {% block content %}{% endblock %}

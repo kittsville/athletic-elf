@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Discipline Leaders{% endblock %}
+{% block extra_head %}
+  <style>
+    table { border-collapse: collapse; width: 100%; max-width: 36rem; margin-top: 0.75rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f5f5f5; }
+    tr:nth-child(even) { background: #fafafa; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    /* Medals via markup, not nth-row CSS: padded rows 2–3 must not show silver/bronze. */
+    .rank-line { display: inline-flex; align-items: center; justify-content: flex-end; gap: 0.35rem; }
+    .rank-line .medal { font-style: normal; }
+    section.leader-section { margin-bottom: 2.5rem; }
+    section.leader-section h2 { margin: 0 0 0.35rem 0; font-size: 1.25rem; }
+    section.leader-section > p.desc { margin: 0; color: #444; max-width: 44rem; }
+    .leaders-empty { color: #555; margin: 0.5rem 0 0 0; }
+  </style>
+{% endblock %}
+{% block content %}
+  <h1>Discipline Leaders 🏆</h1>
+  {% for section in sections %}
+  <section class="leader-section" id="{{ section.slug }}" aria-labelledby="heading-{{ section.slug }}">
+    <h2 id="heading-{{ section.slug }}">{{ section.title }}</h2>
+    <p class="desc">{{ section.description }}</p>
+    {% if section.rows %}
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Rank</th>
+          <th scope="col">Athlete</th>
+          <th scope="col" class="num">{{ section.stat_header }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section.rows %}
+        <tr>
+          <td class="num rank-cell">
+            <span class="rank-line">
+              {% if row.rank == 1 and row.name != "—" %}<span class="medal" aria-hidden="true">🥇</span>
+              {% elif row.rank == 2 and row.name != "—" %}<span class="medal" aria-hidden="true">🥈</span>
+              {% elif row.rank == 3 and row.name != "—" %}<span class="medal" aria-hidden="true">🥉</span>
+              {% endif %}<span class="rank-num">{{ row.rank }}</span>
+            </span>
+          </td>
+          <td>{{ row.name }}</td>
+          <td class="num">{{ row.stat_display }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="leaders-empty">No scored activities yet.</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+{% endblock %}
