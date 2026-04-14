@@ -3,7 +3,7 @@
 from flask import Blueprint, current_app, jsonify, request
 
 from ..extensions import db
-from ..models import Activity, Athelete
+from ..models import Activity, Athlete
 
 bp = Blueprint("webhook", __name__)
 
@@ -38,7 +38,7 @@ def webhook_post():
     if body.get("object_type") == "athlete" and body.get("aspect_type") == "update":
         updates = body.get("updates") or {}
         if updates.get("authorized") == "false":
-            Athelete.query.filter_by(athlete_id=body["object_id"]).delete()
+            Athlete.query.filter_by(athlete_id=body["object_id"]).delete()
             db.session.commit()
             return "EVENT_RECEIVED", 200
 

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from athletic_elf.blueprints.main import _summaries_by_hub_and_department
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
-from athletic_elf.models import Athelete, Bonus
+from athletic_elf.models import Athlete, Bonus
 from athletic_elf.session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 
 from tests.test_hub_department import _TestHubDeptConfig
@@ -21,7 +21,7 @@ class TestBonusHubDepartmentTotals(unittest.TestCase):
         with self.app.app_context():
             for i in range(5):
                 db.session.add(
-                    Athelete(
+                    Athlete(
                         athlete_id=910_000 + i,
                         firstname="A",
                         lastname=str(i),
@@ -75,9 +75,9 @@ class TestBonusesPage(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess[BROWSER_TOKEN_SESSION_KEY] = token
 
-    def _make_user(self, *, organiser: bool = False) -> tuple[Athelete, str]:
+    def _make_user(self, *, organiser: bool = False) -> tuple[Athlete, str]:
         with self.app.app_context():
-            a = Athelete(
+            a = Athlete(
                 athlete_id=920_001,
                 firstname="O",
                 lastname="R",

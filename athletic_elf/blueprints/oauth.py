@@ -8,7 +8,7 @@ from flask import Blueprint, current_app, redirect, request, session, url_for
 
 from ..background import schedule_initial_activity_sync
 from ..extensions import db
-from ..models import Athelete
+from ..models import Athlete
 from ..session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 from ..strava_service import ensure_push_subscription
 from ..utils import athlete_hub_department_complete, oauth_redirect_uri
@@ -76,9 +76,9 @@ def oauth_callback():
     firstname = athlete_info.get("firstname") or ""
     lastname = athlete_info.get("lastname") or ""
 
-    row = Athelete.query.filter_by(athlete_id=aid).first()
+    row = Athlete.query.filter_by(athlete_id=aid).first()
     if row is None:
-        row = Athelete(
+        row = Athlete(
             athlete_id=aid,
             firstname=firstname,
             lastname=lastname,

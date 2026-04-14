@@ -6,11 +6,11 @@ A Flask app that receives [Strava webhook events](https://developers.strava.com/
 
 ## How it works
 
-1. An athlete opens **`GET /oauth/start`** to authorize the app. Strava redirects back to **`GET /oauth/callback`** on your **`DOMAIN`** (must match your app’s [Authorization Callback Domain](https://www.strava.com/settings/api)). Tokens and profile are saved in the **`athelete`** table.
+1. An athlete opens **`GET /oauth/start`** to authorize the app. Strava redirects back to **`GET /oauth/callback`** on your **`DOMAIN`** (must match your app’s [Authorization Callback Domain](https://www.strava.com/settings/api)). Tokens and profile are saved in the **`athlete`** table.
 2. On the first successful registration for your Strava application, the app creates a [push subscription](https://developers.strava.com/docs/webhooks/) with callback URL **`{DOMAIN}/webhook`**. Strava allows **only one subscription per application**. Each event includes **`owner_id`**, which is stored on new **`activity`** rows.
 3. For new activities, a row is inserted into **`activity`** with **`activity_id`** and **`owner_id`** as **`athlete_id`** (pending enrichment).
-4. **`POST /cron`** processes up to 10 rows still missing **`start_date`**, looks up that athlete’s tokens in **`athelete`**, refreshes the access token if needed, then fetches and updates the activity.
-5. When an activity is deleted, the corresponding **`activity`** row is removed. Athlete deauthorization (`object_type: athlete`, `authorized: false`) removes the **`athelete`** row.
+4. **`POST /cron`** processes up to 10 rows still missing **`start_date`**, looks up that athlete’s tokens in **`athlete`**, refreshes the access token if needed, then fetches and updates the activity.
+5. When an activity is deleted, the corresponding **`activity`** row is removed. Athlete deauthorization (`object_type: athlete`, `authorized: false`) removes the **`athlete`** row.
 
 ## Setup
 
@@ -92,7 +92,7 @@ Starts the OAuth 2.0 flow: redirects the user to Strava to approve scopes (`read
 
 ### `GET /oauth/callback`
 
-Exchanges the authorization code for tokens, upserts **`athelete`** ( **`athlete_id`**, **`firstname`**, **`lastname`**, tokens, **`expires_at`** ), and ensures a push subscription exists when possible.
+Exchanges the authorization code for tokens, upserts **`athlete`** ( **`athlete_id`**, **`firstname`**, **`lastname`**, tokens, **`expires_at`** ), and ensures a push subscription exists when possible.
 
 ### `GET /webhook`
 

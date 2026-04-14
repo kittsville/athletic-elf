@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from flask import current_app, session
 
 from .extensions import db
-from .models import Athelete, BrowserSession
+from .models import Athlete, BrowserSession
 
 # Key in Flask's signed session cookie (distinct from oauth_state).
 BROWSER_TOKEN_SESSION_KEY = "browser_token"
@@ -34,7 +34,7 @@ def create_browser_session(athlete_id: int) -> tuple[str, datetime]:
     return raw, expires_at
 
 
-def current_athlete_from_request() -> Athelete | None:
+def current_athlete_from_request() -> Athlete | None:
     token = session.get(BROWSER_TOKEN_SESSION_KEY)
     if not token:
         return None
@@ -47,4 +47,4 @@ def current_athlete_from_request() -> Athelete | None:
     )
     if bs is None:
         return None
-    return db.session.get(Athelete, bs.athlete_id)
+    return db.session.get(Athlete, bs.athlete_id)

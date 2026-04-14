@@ -3,8 +3,8 @@
 from .extensions import db
 
 
-class Athelete(db.Model):
-    __tablename__ = "athelete"
+class Athlete(db.Model):
+    __tablename__ = "athlete"
     athlete_id = db.Column(db.BigInteger, primary_key=True)
     firstname = db.Column(db.String(255), nullable=False, default="")
     lastname = db.Column(db.String(255), nullable=False, default="")
@@ -22,7 +22,7 @@ class Activity(db.Model):
     activity_id = db.Column(db.BigInteger, nullable=False, unique=True)
     athlete_id = db.Column(
         db.BigInteger,
-        db.ForeignKey("athelete.athlete_id", ondelete="CASCADE"),
+        db.ForeignKey("athlete.athlete_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -39,7 +39,7 @@ class BrowserSession(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     athlete_id = db.Column(
         db.BigInteger,
-        db.ForeignKey("athelete.athlete_id", ondelete="CASCADE"),
+        db.ForeignKey("athlete.athlete_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -58,8 +58,8 @@ class Bonus(db.Model):
     target = db.Column(db.String(255), nullable=False, index=True)
     athlete_id = db.Column(
         db.BigInteger,
-        db.ForeignKey("athelete.athlete_id", ondelete="CASCADE"),
+        db.ForeignKey("athlete.athlete_id", ondelete="CASCADE"),
         nullable=False,
     )
 
-    awardee = db.relationship("Athelete", foreign_keys=[athlete_id])
+    awardee = db.relationship("Athlete", foreign_keys=[athlete_id])

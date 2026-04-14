@@ -64,8 +64,8 @@ def create_app(config_class: type = Config) -> Flask:
             "main.delete_my_data",
             "main.hub_department_form",
             "main.results",
-            "main.atheletes",
-            "main.atheletes_make_organiser",
+            "main.athletes",
+            "main.athletes_make_organiser",
             "main.bonuses",
             "main.bonus_delete",
         }

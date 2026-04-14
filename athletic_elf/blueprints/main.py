@@ -18,7 +18,7 @@ from points import activities_total_points, team_points
 from sqlalchemy.orm import joinedload, load_only
 
 from ..extensions import db
-from ..models import Activity, Athelete, Bonus, BrowserSession
+from ..models import Activity, Athlete, Bonus, BrowserSession
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..strava_service import process_activities
 from ..utils import (
@@ -57,8 +57,8 @@ def _summaries_by_hub_and_department(
     dept_set = frozenset(department_options)
     hub_member_points: defaultdict[str, list[int]] = defaultdict(list)
     dept_member_points: defaultdict[str, list[int]] = defaultdict(list)
-    athletes = Athelete.query.options(
-        load_only(Athelete.athlete_id, Athelete.hub, Athelete.department)
+    athletes = Athlete.query.options(
+        load_only(Athlete.athlete_id, Athlete.hub, Athlete.department)
     ).all()
     for a in athletes:
         aid = int(a.athlete_id)
@@ -99,7 +99,7 @@ def _summaries_by_hub_and_department(
     return hub_rows, dept_rows
 
 
-def _can_perform_organiser_tasks(athlete: Athelete) -> bool:
+def _can_perform_organiser_tasks(athlete: Athlete) -> bool:
     return (
         athlete.is_organiser
         or int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
@@ -189,7 +189,7 @@ def gdpr():
 @bp.post("/delete-my-data")
 def delete_my_data():
     athlete = g.current_athlete
-    Athelete.query.filter_by(athlete_id=athlete.athlete_id).delete(
+    Athlete.query.filter_by(athlete_id=athlete.athlete_id).delete(
         synchronize_session=False
     )
     db.session.commit()
@@ -237,10 +237,10 @@ def results():
     rows: list[dict[str, object]] = []
     if show_athlete_points:
         for athlete_id, pts in points_by.items():
-            athelete = Athelete.query.filter_by(athlete_id=athlete_id).first()
-            if athelete:
-                fn = athelete.firstname or ""
-                ln = athelete.lastname or ""
+            profile = Athlete.query.filter_by(athlete_id=athlete_id).first()
+            if profile:
+                fn = profile.firstname or ""
+                ln = profile.lastname or ""
             else:
                 fn, ln = "", ""
             rows.append(
@@ -262,30 +262,30 @@ def results():
     )
 
 
-@bp.get("/atheletes")
-def atheletes():
+@bp.get("/athletes")
+def athletes():
     athlete = g.current_athlete
     if not _can_perform_organiser_tasks(athlete):
         abort(403)
-    atheletes = (
-        Athelete.query.options(
+    roster = (
+        Athlete.query.options(
             load_only(
-                Athelete.athlete_id,
-                Athelete.firstname,
-                Athelete.lastname,
-                Athelete.hub,
-                Athelete.department,
-                Athelete.is_organiser,
+                Athlete.athlete_id,
+                Athlete.firstname,
+                Athlete.lastname,
+                Athlete.hub,
+                Athlete.department,
+                Athlete.is_organiser,
             )
         )
-        .order_by(Athelete.athlete_id.asc())
+        .order_by(Athlete.athlete_id.asc())
         .all()
     )
     dev_ids = current_app.config["APP_DEVELOPER_IDS"]
     points_by = _points_by_athlete_strava_id()
     table_rows = [
         {
-            "athelete_pk": a.athlete_id,
+            "athlete_pk": a.athlete_id,
             "athlete_id": a.athlete_id,
             "name": athlete_display_name(a.firstname or "", a.lastname or ""),
             "hub": (a.hub or "").strip() or "—",
@@ -294,22 +294,22 @@ def atheletes():
             "is_organiser": bool(a.is_organiser),
             "is_app_developer": int(a.athlete_id) in dev_ids,
         }
-        for a in atheletes
+        for a in roster
     ]
-    return render_template("atheletes.html", rows=table_rows)
+    return render_template("athletes.html", rows=table_rows)
 
 
-@bp.post("/atheletes/<int:athelete_pk>/make-organiser")
-def atheletes_make_organiser(athelete_pk: int):
+@bp.post("/athletes/<int:athlete_pk>/make-organiser")
+def athletes_make_organiser(athlete_pk: int):
     actor = g.current_athlete
     if not _can_perform_organiser_tasks(actor):
         abort(403)
-    target = db.session.get(Athelete, athelete_pk)
+    target = db.session.get(Athlete, athlete_pk)
     if target is None:
         abort(404)
     target.is_organiser = True
     db.session.commit()
-    return redirect(url_for("main.atheletes"))
+    return redirect(url_for("main.athletes"))
 
 
 def _bonuses_table_rows() -> list[dict[str, object]]:

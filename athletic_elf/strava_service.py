@@ -6,7 +6,7 @@ import requests as http_client
 from flask import current_app
 
 from .extensions import db
-from .models import Activity, Athelete
+from .models import Activity, Athlete
 from .utils import domain_base, parse_strava_datetime
 
 
@@ -46,7 +46,7 @@ def sync_activities_since_competition_start(athlete_id: int) -> int:
         )
         return 0
 
-    athlete = db.session.get(Athelete, athlete_id)
+    athlete = db.session.get(Athlete, athlete_id)
     if athlete is None:
         current_app.logger.warning(
             "Initial activity sync: no athlete row for athlete_id=%s", athlete_id
@@ -192,7 +192,7 @@ def ensure_push_subscription():
     return new_id
 
 
-def maybe_refresh_athlete_token(athlete: Athelete) -> None:
+def maybe_refresh_athlete_token(athlete: Athlete) -> None:
     cfg = current_app.config
     now = int(datetime.now(timezone.utc).timestamp())
     if now < athlete.expires_at - 300:
@@ -233,9 +233,9 @@ def process_activities(limit=10):
         if activity.athlete_id is None:
             print(f"skip activity {activity.activity_id}: no athlete_id")
             continue
-        athlete = Athelete.query.filter_by(athlete_id=activity.athlete_id).first()
+        athlete = Athlete.query.filter_by(athlete_id=activity.athlete_id).first()
         if athlete is None:
-            print(f"skip activity {activity.activity_id}: no athelete row")
+            print(f"skip activity {activity.activity_id}: no athlete row")
             continue
         maybe_refresh_athlete_token(athlete)
         resp = http_client.get(

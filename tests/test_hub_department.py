@@ -5,7 +5,7 @@ import unittest
 from athletic_elf.config import Config, parse_comma_options
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
-from athletic_elf.models import Athelete
+from athletic_elf.models import Athlete
 from athletic_elf.session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 from athletic_elf.utils import athlete_hub_department_complete
 
@@ -60,9 +60,9 @@ class TestHubDepartmentForm(unittest.TestCase):
         *,
         hub: str | None = None,
         department: str | None = None,
-    ) -> tuple[Athelete, str]:
+    ) -> tuple[Athlete, str]:
         with self.app.app_context():
-            a = Athelete(
+            a = Athlete(
                 athlete_id=999001,
                 firstname="T",
                 lastname="E",
@@ -103,7 +103,7 @@ class TestHubDepartmentForm(unittest.TestCase):
         self.assertEqual(rv.status_code, 302)
         self.assertTrue(rv.location.endswith("/"))
         with self.app.app_context():
-            row = Athelete.query.filter_by(athlete_id=999001).one()
+            row = Athlete.query.filter_by(athlete_id=999001).one()
             self.assertEqual(row.hub, "North Hub")
             self.assertEqual(row.department, "Engineering")
 

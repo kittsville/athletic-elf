@@ -8,7 +8,7 @@
     th { font-weight: 600; background: #f6f6f6; }
     tbody tr:hover { background: #fafafa; }
     .muted { color: #555; font-size: 0.9rem; }
-    .atheletes-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 40rem; }
+    .athletes-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 40rem; }
   </style>
 {% endblock %}
 {% block content %}
@@ -40,7 +40,7 @@
           {% else %}
             <form
               method="post"
-              action="{{ url_for('main.atheletes_make_organiser', athelete_pk=row.athelete_pk) }}"
+              action="{{ url_for('main.athletes_make_organiser', athlete_pk=row.athlete_pk) }}"
               style="display: inline;"
             >
               <button type="submit">Make Organiser</button>
@@ -51,5 +51,5 @@
     {% endfor %}
     </tbody>
   </table>
-  <p class="atheletes-note">Only organisers and app developers can view this page.</p>
+  <p class="athletes-note">Only organisers and app developers can view this page.</p>
 {% endblock %}
