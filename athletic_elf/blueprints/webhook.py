@@ -66,7 +66,16 @@ def webhook_post(webhook_verify_token: str):
 
     if body.get("object_type") == "activity":
         activity_id = body["object_id"]
-        if body.get("aspect_type") == "create":
+        aspect_type = body.get("aspect_type")
+
+        current_app.logger.info(
+            "Strava webhook %s for activity %s by athlete %s",
+            aspect_type,
+            activity_id,
+            owner_id if owner_id is not None else "unknown",
+        )
+
+        if aspect_type == "create":
             if owner_id is None:
                 current_app.logger.warning(
                     "Webhook activity create missing owner_id; skipping insert"
@@ -74,10 +83,10 @@ def webhook_post(webhook_verify_token: str):
             else:
                 db.session.add(Activity(activity_id=activity_id, athlete_id=owner_id))
                 db.session.commit()
-        elif body.get("aspect_type") == "delete":
+        elif aspect_type == "delete":
             Activity.query.filter_by(activity_id=activity_id).delete()
             db.session.commit()
-        elif body.get("aspect_type") == "update":
+        elif aspect_type == "update":
             row = Activity.query.filter_by(activity_id=activity_id).first()
             if row is not None:
                 # Clear cached Strava fields so /cron enrichment refetches latest details.
