@@ -3,9 +3,12 @@
 import unittest
 from urllib.parse import quote
 
+from datetime import datetime, timezone
+
 from athletic_elf.config import Config
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
+from athletic_elf.models import Activity
 from athletic_elf.utils import strava_webhook_callback_url
 
 
@@ -82,6 +85,40 @@ class TestWebhookRoutes(unittest.TestCase):
     def test_post_returns_404_for_wrong_path(self):
         r = self.client.post("/webhook/other", json={"object_type": "activity"})
         self.assertEqual(r.status_code, 404)
+
+    def test_activity_update_clears_fields_for_cron_refetch(self):
+        with self.app.app_context():
+            db.drop_all()
+            db.create_all()
+            row = Activity(
+                activity_id=777_001,
+                athlete_id=888_001,
+                distance=5000.0,
+                sport_type="Run",
+                start_date=datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+                moving_time=3600,
+            )
+            db.session.add(row)
+            db.session.commit()
+            preserved_id = row.id
+
+        body = {
+            "aspect_type": "update",
+            "object_type": "activity",
+            "object_id": 777_001,
+            "owner_id": 888_001,
+        }
+        r = self.client.post("/webhook/my-verify-secret", json=body)
+        self.assertEqual(r.status_code, 200)
+
+        with self.app.app_context():
+            again = Activity.query.filter_by(activity_id=777_001).one()
+            self.assertEqual(again.id, preserved_id)
+            self.assertEqual(int(again.athlete_id), 888_001)
+            self.assertIsNone(again.distance)
+            self.assertIsNone(again.sport_type)
+            self.assertIsNone(again.start_date)
+            self.assertIsNone(again.moving_time)
 
 
 class TestCreateAppRequiresVerifyToken(unittest.TestCase):

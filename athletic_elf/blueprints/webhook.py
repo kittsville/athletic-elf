@@ -77,5 +77,14 @@ def webhook_post(webhook_verify_token: str):
         elif body.get("aspect_type") == "delete":
             Activity.query.filter_by(activity_id=activity_id).delete()
             db.session.commit()
+        elif body.get("aspect_type") == "update":
+            row = Activity.query.filter_by(activity_id=activity_id).first()
+            if row is not None:
+                # Clear cached Strava fields so /cron enrichment refetches latest details.
+                row.distance = None
+                row.sport_type = None
+                row.start_date = None
+                row.moving_time = None
+                db.session.commit()
 
     return "EVENT_RECEIVED", 200
