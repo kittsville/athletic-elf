@@ -54,8 +54,6 @@ class TestCronEndpoint(unittest.TestCase):
         app = create_app(_TestHubDeptConfig)
         app.config["TESTING"] = True
         client = app.test_client()
-        r = client.post(
-            "/cron", headers={"Authorization": "Bearer test-cron-secret"}
-        )
+        r = client.post("/cron", headers={"Authorization": "Bearer test-cron-secret"})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.get_data(as_text=True), "Processing Started")

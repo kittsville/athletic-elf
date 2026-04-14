@@ -30,9 +30,7 @@ def run_cron_maintenance(app) -> None:
             ).delete(synchronize_session=False)
             n = process_activities(50)
             db.session.commit()
-            summary = (
-                f"Processed {n} activities, removed {removed_sessions} expired session(s)"
-            )
+            summary = f"Processed {n} activities, removed {removed_sessions} expired session(s)"
             app.logger.info(summary)
         except Exception:
             db.session.rollback()
