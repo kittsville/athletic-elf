@@ -145,6 +145,7 @@ class TestHardFitnessRow(unittest.TestCase):
             "Surfing",
             "InlineSkate",
             "Basketball",
+            "Pilates",
         )
         moving_time = 15 * 60
         for sport_type in sports:
@@ -160,6 +161,10 @@ class TestHardFitnessRow(unittest.TestCase):
         acts = [_activity("HighIntensityIntervalTraining", moving_time=14 * 60)]
         self.assertEqual(activities_total_points(acts), 0)
 
+    def test_pilates_without_start_date_still_scores(self):
+        acts = [_activity("Pilates", moving_time=15 * 60, start_date=None)]
+        self.assertEqual(activities_total_points(acts), 1)
+
 
 class TestEasyFitnessRow(unittest.TestCase):
     """Easy fitness: 30 min = 1 pt, max 5 pts / day."""
@@ -167,7 +172,6 @@ class TestEasyFitnessRow(unittest.TestCase):
     def test_each_easy_fitness_supported_sport_types(self):
         sports = (
             "Yoga",
-            "Pilates",
             "TableTennis",
             "Badminton",
             "Windsurf",

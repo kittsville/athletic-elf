@@ -24,13 +24,13 @@ _SCORE_HARD_FITNESS = frozenset(
         "Surfing",
         "InlineSkate",
         "Basketball",
+        "Pilates",
     }
 )
 # Table types intersected with Strava sport_type enum (Stretching/Cricket/Dance etc. omitted)
 _SCORE_EASY_FITNESS = frozenset(
     {
         "Yoga",
-        "Pilates",
         "TableTennis",
         "Badminton",
         "Windsurf",
@@ -41,8 +41,8 @@ _SCORE_EASY_FITNESS = frozenset(
     }
 )
 
-# Yoga / Pilates for leaderboards (not full easy-fitness set); "stretching" in copy is informal.
-_SCORE_ZEN_MASTER = frozenset({"Yoga", "Pilates"})
+# Yoga for leaderboards (not full easy-fitness set); "stretching" in copy is informal.
+_SCORE_ZEN_MASTER = frozenset({"Yoga"})
 
 _EASY_FITNESS_DAILY_CAP = 5
 _SECONDS_PER_EASY_POINT = 30 * 60

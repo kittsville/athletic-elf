@@ -65,7 +65,7 @@ LEADERBOARD_SPECS: tuple[tuple[str, str, str, str, str], ...] = (
         "zen",
         "The Zen Master",
         "For the mobility and recovery specialists.",
-        "Yoga / Pilates (min)",
+        "Yoga (min)",
         "zen_min",
     ),
     (
