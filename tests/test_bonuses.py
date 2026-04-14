@@ -64,6 +64,38 @@ class TestBonusHubDepartmentTotals(unittest.TestCase):
             self.assertAlmostEqual(north["points"], 17.0)
             self.assertAlmostEqual(eng["points"], 13.0)
 
+    def test_inactive_athletes_excluded_from_hub_and_department_team_scores(self):
+        with self.app.app_context():
+            for i in range(5):
+                db.session.add(
+                    Athlete(
+                        athlete_id=911_000 + i,
+                        firstname="A",
+                        lastname=str(i),
+                        access_token="t",
+                        refresh_token="r",
+                        expires_at=2_000_000_000,
+                        hub="North Hub",
+                        department="Engineering",
+                        is_active=(i != 0),
+                    )
+                )
+            db.session.commit()
+
+            points_by = {911_000 + i: 10 for i in range(5)}
+            hub_rows, dept_rows = summaries_by_hub_and_department(
+                points_by,
+                list(self.app.config["HUB_OPTIONS"]),
+                list(self.app.config["DEPARTMENT_OPTIONS"]),
+            )
+            north = next(r for r in hub_rows if r["name"] == "North Hub")
+            eng = next(r for r in dept_rows if r["name"] == "Engineering")
+            # Only four active members per group; team_points needs at least five -> 0
+            self.assertEqual(north["athlete_count"], 4)
+            self.assertEqual(eng["athlete_count"], 4)
+            self.assertAlmostEqual(north["points"], 0.0)
+            self.assertAlmostEqual(eng["points"], 0.0)
+
 
 class TestBonusesPage(unittest.TestCase):
     def setUp(self):

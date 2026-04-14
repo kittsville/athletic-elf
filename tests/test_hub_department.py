@@ -7,7 +7,7 @@ from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
 from athletic_elf.models import Athlete
 from athletic_elf.session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
-from athletic_elf.utils import athlete_hub_department_complete
+from athletic_elf.utils import athlete_hub_department_complete, athlete_role_label
 
 
 class _TestHubDeptConfig(Config):
@@ -35,6 +35,26 @@ class TestParseCommaOptions(unittest.TestCase):
         self.assertEqual(
             parse_comma_options("", "One,Two"),
             ("One", "Two"),
+        )
+
+
+class TestAthleteRoleLabel(unittest.TestCase):
+    def test_inactive_before_organiser(self):
+        self.assertEqual(
+            athlete_role_label(False, True, is_active=False),
+            "Inactive Participant",
+        )
+
+    def test_active_organiser(self):
+        self.assertEqual(
+            athlete_role_label(False, True, is_active=True),
+            "Competition Organiser",
+        )
+
+    def test_app_developer_ignores_inactive_flag(self):
+        self.assertEqual(
+            athlete_role_label(True, False, is_active=False),
+            "App developer",
         )
 
 

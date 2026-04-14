@@ -99,3 +99,96 @@ class TestAthleteActivitiesPage(unittest.TestCase):
         self._login(token)
         rv = self.client.get("/athletes/999999999")
         self.assertEqual(rv.status_code, 404)
+
+
+class TestAthletesMakeInactive(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(_TestHubDeptConfig)
+        self.app.config["TESTING"] = True
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset()
+        self.client = self.app.test_client()
+
+    def _login(self, token: str) -> None:
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = token
+
+    def _seed(self) -> tuple[str, int]:
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=931_001,
+                firstname="Org",
+                lastname="One",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            target = Athlete(
+                athlete_id=931_002,
+                firstname="Tar",
+                lastname="Get",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            db.session.add_all([organiser, target])
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+            return raw, int(target.athlete_id)
+
+    def test_organiser_post_sets_inactive(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.post(
+            f"/athletes/{target_pk}/make-inactive",
+            follow_redirects=False,
+        )
+        self.assertEqual(rv.status_code, 302)
+        self.assertTrue(rv.location.endswith("/athletes"))
+        with self.app.app_context():
+            row = Athlete.query.filter_by(athlete_id=target_pk).one()
+            self.assertFalse(row.is_active)
+
+    def test_non_organiser_forbidden(self):
+        with self.app.app_context():
+            u = Athlete(
+                athlete_id=931_010,
+                firstname="P",
+                lastname="eer",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=False,
+            )
+            victim = Athlete(
+                athlete_id=931_011,
+                firstname="V",
+                lastname="ic",
+                access_token="at3",
+                refresh_token="rt3",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+            )
+            db.session.add_all([u, victim])
+            db.session.flush()
+            raw, _ = create_browser_session(int(u.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.post("/athletes/931011/make-inactive")
+        self.assertEqual(rv.status_code, 403)
+        with self.app.app_context():
+            self.assertTrue(Athlete.query.filter_by(athlete_id=931_011).one().is_active)
+
+    def test_cannot_deactivate_organiser_target(self):
+        token, _ = self._seed()
+        self._login(token)
+        rv = self.client.post("/athletes/931001/make-inactive")
+        self.assertEqual(rv.status_code, 403)

@@ -20,9 +20,13 @@ def summaries_by_hub_and_department(
     hub_member_points: defaultdict[str, list[int]] = defaultdict(list)
     dept_member_points: defaultdict[str, list[int]] = defaultdict(list)
     athletes = Athlete.query.options(
-        load_only(Athlete.athlete_id, Athlete.hub, Athlete.department)
+        load_only(
+            Athlete.athlete_id, Athlete.hub, Athlete.department, Athlete.is_active
+        )
     ).all()
     for a in athletes:
+        if not a.is_active:
+            continue
         aid = int(a.athlete_id)
         pts = points_by.get(aid, 0)
         h = (a.hub or "").strip()

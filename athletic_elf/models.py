@@ -14,6 +14,7 @@ class Athlete(db.Model):
     hub = db.Column(db.String(255), nullable=True, index=True)
     department = db.Column(db.String(255), nullable=True, index=True)
     is_organiser = db.Column(db.Boolean, nullable=False, default=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
 
 
 class Activity(db.Model):

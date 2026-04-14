@@ -33,7 +33,7 @@
         <td>{{ row.hub }}</td>
         <td>{{ row.department }}</td>
         <td>{{ row.score }}</td>
-        <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser) }}</td>
+        <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser, row.is_active) }}</td>
         <td>
           {% if row.is_organiser or row.is_app_developer %}
             <span class="muted">—</span>
@@ -45,6 +45,15 @@
             >
               <button type="submit">Make Organiser</button>
             </form>
+            {% if row.is_active %}
+              <form
+                method="post"
+                action="{{ url_for('main.athletes_make_inactive', athlete_pk=row.athlete_pk) }}"
+                style="display: inline; margin-left: 0.35rem;"
+              >
+                <button type="submit">Make Inactive</button>
+              </form>
+            {% endif %}
           {% endif %}
         </td>
       </tr>

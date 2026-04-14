@@ -84,6 +84,7 @@ def index():
         department_display=department_display,
         is_app_developer=is_app_developer,
         is_organiser=bool(athlete.is_organiser),
+        is_active=bool(athlete.is_active),
         activities=activities,
         team_points=team_points,
         activity_start_display=activity_start_date_for_display(
@@ -206,6 +207,7 @@ def athletes():
                 Athlete.hub,
                 Athlete.department,
                 Athlete.is_organiser,
+                Athlete.is_active,
             )
         )
         .order_by(Athlete.athlete_id.asc())
@@ -223,6 +225,7 @@ def athletes():
             "score": points_by.get(int(a.athlete_id), 0),
             "is_organiser": bool(a.is_organiser),
             "is_app_developer": int(a.athlete_id) in dev_ids,
+            "is_active": bool(a.is_active),
         }
         for a in roster
     ]
@@ -262,6 +265,24 @@ def athletes_make_organiser(athlete_pk: int):
     if target is None:
         abort(404)
     target.is_organiser = True
+    db.session.commit()
+    return redirect(url_for("main.athletes"))
+
+
+@bp.post("/athletes/<int:athlete_pk>/make-inactive")
+def athletes_make_inactive(athlete_pk: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    target = db.session.get(Athlete, athlete_pk)
+    if target is None:
+        abort(404)
+    if (
+        target.is_organiser
+        or int(target.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    ):
+        abort(403)
+    target.is_active = False
     db.session.commit()
     return redirect(url_for("main.athletes"))
 

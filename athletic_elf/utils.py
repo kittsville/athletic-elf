@@ -48,12 +48,15 @@ def athlete_display_name(firstname: str, lastname: str) -> str:
     return " ".join(p for p in parts if p) or "—"
 
 
-def athlete_role_label(is_app_developer: bool, is_organiser: bool) -> str:
-    """Homepage / directory role: app dev first, then organiser, else participant."""
+def athlete_role_label(
+    is_app_developer: bool, is_organiser: bool, is_active: bool = True
+) -> str:
     if is_app_developer:
         return "App developer"
     if is_organiser:
         return "Competition Organiser"
+    if not is_active:
+        return "Inactive Participant"
     return "Participant"
 
 
