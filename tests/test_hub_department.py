@@ -39,16 +39,22 @@ class TestParseCommaOptions(unittest.TestCase):
 
 
 class TestAthleteRoleLabel(unittest.TestCase):
-    def test_inactive_before_organiser(self):
+    def test_organiser_takes_precedence_over_inactive(self):
         self.assertEqual(
             athlete_role_label(False, True, is_active=False),
-            "Inactive Participant",
+            "Competition Organiser",
         )
 
     def test_active_organiser(self):
         self.assertEqual(
             athlete_role_label(False, True, is_active=True),
             "Competition Organiser",
+        )
+
+    def test_inactive_participant(self):
+        self.assertEqual(
+            athlete_role_label(False, False, is_active=False),
+            "Inactive Participant",
         )
 
     def test_app_developer_ignores_inactive_flag(self):
