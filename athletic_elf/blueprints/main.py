@@ -100,9 +100,7 @@ def _summaries_by_hub_and_department(
 
 
 def _can_perform_organiser_tasks(athlete: Athelete) -> bool:
-    if athlete.is_organiser:
-        return True
-    return int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    return athlete.is_organiser or int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
 
 
 @bp.context_processor
