@@ -97,6 +97,8 @@ class Config:
     )
 
     VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "STRAVA")
+    # Shared secret for POST /cron (e.g. Heroku Scheduler: curl -H "Authorization: Bearer …").
+    CRON_SECRET = (os.getenv("CRON_SECRET", "") or "").strip() or None
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
     DOMAIN = os.getenv("DOMAIN")

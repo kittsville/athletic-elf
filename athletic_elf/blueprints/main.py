@@ -1,5 +1,7 @@
 """HTML pages, logout, data deletion, and cron."""
 
+import secrets
+import threading
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -210,20 +212,49 @@ def logout():
     return redirect(url_for("main.index"))
 
 
+def _cron_authorization_ok(expected: str, authorization: str | None) -> bool:
+    if not authorization or not authorization.startswith("Bearer "):
+        return False
+    presented = authorization.removeprefix("Bearer ").strip()
+    return secrets.compare_digest(presented, expected)
+
+
+def _run_cron_maintenance(app) -> None:
+    """Session cleanup and activity enrichment; must run inside ``app.app_context()``."""
+    with app.app_context():
+        try:
+            now = datetime.now(timezone.utc)
+            removed_sessions = BrowserSession.query.filter(
+                BrowserSession.expires_at < now
+            ).delete(synchronize_session=False)
+            n = process_activities(50)
+            db.session.commit()
+            summary = (
+                f"Processed {n} activities, removed {removed_sessions} expired session(s)"
+            )
+            app.logger.info(summary)
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("cron maintenance failed")
+
+
 @bp.post("/cron")
 def cron():
-    now = datetime.now(timezone.utc)
-    removed_sessions = BrowserSession.query.filter(
-        BrowserSession.expires_at < now
-    ).delete(synchronize_session=False)
-    n = process_activities(10)
-    db.session.commit()
-    summary = f"Processed {n} activities, removed {removed_sessions} expired session(s)"
-    current_app.logger.info(summary)
-    return (
-        summary,
-        200,
-    )
+    expected = current_app.config.get("CRON_SECRET")
+    if not expected:
+        abort(
+            503,
+            description="Cron is not configured (set CRON_SECRET in the environment).",
+        )
+    if not _cron_authorization_ok(expected, request.headers.get("Authorization")):
+        abort(403)
+    app = current_app._get_current_object()
+    threading.Thread(
+        target=_run_cron_maintenance,
+        args=(app,),
+        daemon=True,
+    ).start()
+    return ("Processing Started", 200)
 
 
 @bp.get("/results")
