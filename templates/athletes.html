@@ -55,6 +55,13 @@
               </form>
             {% endif %}
           {% endif %}
+          <form
+            method="post"
+            action="{{ url_for('main.athletes_resync_activities', athlete_pk=row.athlete_pk) }}"
+            style="display: inline; margin-left: 0.35rem;"
+          >
+            <button type="submit">Re-import activities</button>
+          </form>
         </td>
       </tr>
     {% endfor %}

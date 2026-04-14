@@ -16,6 +16,7 @@ from flask import (
 from points import activities_total_points
 from sqlalchemy.orm import joinedload, load_only
 
+from ..background import schedule_initial_activity_sync
 from ..extensions import db
 from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
 from ..models import Activity, Athlete, Bonus, BrowserSession
@@ -284,6 +285,24 @@ def athletes_make_inactive(athlete_pk: int):
         abort(403)
     target.is_active = False
     db.session.commit()
+    return redirect(url_for("main.athletes"))
+
+
+@bp.post("/athletes/<int:athlete_pk>/resync-activities")
+def athletes_resync_activities(athlete_pk: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    target = db.session.get(Athlete, athlete_pk)
+    if target is None:
+        abort(404)
+    Activity.query.filter_by(athlete_id=target.athlete_id).delete(
+        synchronize_session=False
+    )
+    db.session.commit()
+    schedule_initial_activity_sync(
+        current_app._get_current_object(), int(target.athlete_id)
+    )
     return redirect(url_for("main.athletes"))
 
 
