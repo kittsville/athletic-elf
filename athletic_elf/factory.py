@@ -14,7 +14,7 @@ from .config import (
 )
 from .extensions import db
 from .session import current_athlete_from_request
-from .utils import athlete_role_label
+from .utils import athlete_role_label, format_moving_time
 
 
 def create_app(config_class: type = Config) -> Flask:
@@ -50,6 +50,7 @@ def create_app(config_class: type = Config) -> Flask:
 
     db.init_app(app)
     app.add_template_global(athlete_role_label)
+    app.add_template_global(format_moving_time)
 
     from . import models  # noqa: F401 — register models with SQLAlchemy
 
@@ -65,6 +66,7 @@ def create_app(config_class: type = Config) -> Flask:
             "main.hub_department_form",
             "main.results",
             "main.athletes",
+            "main.athlete_activities",
             "main.athletes_make_organiser",
             "main.bonuses",
             "main.bonus_delete",

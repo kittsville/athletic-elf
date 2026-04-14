@@ -1,0 +1,40 @@
+{% if activities %}
+  <table class="activities">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Sport</th>
+        <th>Distance</th>
+        <th>Moving time (min)</th>
+        <th>Activity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in activities %}
+        <tr>
+          <td>
+            {% if a.start_date %}
+              {{ a.start_date.strftime("%Y-%m-%d %H:%M") }} UTC
+            {% else %}
+              <span class="muted">Pending sync</span>
+            {% endif %}
+          </td>
+          <td>{{ a.sport_type or "—" }}</td>
+          <td>
+            {% if a.distance is not none %}
+              {{ "%.2f"|format(a.distance / 1000) }} km
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>{{ format_moving_time(a.moving_time) }}</td>
+          <td>
+            <a href="https://www.strava.com/activities/{{ a.activity_id }}" target="_blank" rel="noopener">View on Strava</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="muted">No activities stored yet. New Strava activities will appear after webhooks and background processing.</p>
+{% endif %}

@@ -25,7 +25,6 @@ from ..utils import (
     activity_start_date_for_display,
     athlete_display_name,
     athlete_hub_department_complete,
-    format_moving_time,
 )
 
 bp = Blueprint("main", __name__)
@@ -106,6 +105,18 @@ def _can_perform_organiser_tasks(athlete: Athlete) -> bool:
     )
 
 
+def _activities_for_athlete(athlete_strava_id: int) -> list[Activity]:
+    return (
+        Activity.query.filter_by(athlete_id=athlete_strava_id)
+        .order_by(
+            Activity.start_date.is_(None),
+            Activity.start_date.desc(),
+            Activity.id.desc(),
+        )
+        .all()
+    )
+
+
 @bp.context_processor
 def inject_nav_context():
     athlete = getattr(g, "current_athlete", None)
@@ -121,15 +132,7 @@ def index():
     strava_id = int(athlete.athlete_id)
     name = athlete_display_name(athlete.firstname, athlete.lastname)
     is_app_developer = strava_id in current_app.config["APP_DEVELOPER_IDS"]
-    activities = (
-        Activity.query.filter_by(athlete_id=strava_id)
-        .order_by(
-            Activity.start_date.is_(None),
-            Activity.start_date.desc(),
-            Activity.id.desc(),
-        )
-        .all()
-    )
+    activities = _activities_for_athlete(strava_id)
     scored = [a for a in activities if a.start_date is not None]
     team_points = activities_total_points(scored)
     hub_display = (athlete.hub or "").strip() or "—"
@@ -145,7 +148,6 @@ def index():
         is_organiser=bool(athlete.is_organiser),
         activities=activities,
         team_points=team_points,
-        format_moving_time=format_moving_time,
         activity_start_display=activity_start_date_for_display(
             current_app.config.get("ACTIVITY_START_DATE")
         ),
@@ -297,6 +299,30 @@ def athletes():
         for a in roster
     ]
     return render_template("athletes.html", rows=table_rows)
+
+
+@bp.get("/athletes/<int:athlete_id>")
+def athlete_activities(athlete_id: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    target = db.session.get(Athlete, athlete_id)
+    if target is None:
+        abort(404)
+    activities = _activities_for_athlete(athlete_id)
+    scored = [a for a in activities if a.start_date is not None]
+    team_points_val = activities_total_points(scored)
+    viewed_name = athlete_display_name(target.firstname or "", target.lastname or "")
+    return render_template(
+        "athlete_activities.html",
+        viewed_athlete_id=athlete_id,
+        viewed_name=viewed_name,
+        activities=activities,
+        team_points=team_points_val,
+        activity_start_display=activity_start_date_for_display(
+            current_app.config.get("ACTIVITY_START_DATE")
+        ),
+    )
 
 
 @bp.post("/athletes/<int:athlete_pk>/make-organiser")
