@@ -78,17 +78,21 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-From the repository root, either run the helper (uses **`.venv`** automatically when it exists) or invoke unittest with the venv’s Python:
+From the repository root, run the suite with the same Python you installed into (the venv’s **`python`** if you created **`.venv`**):
 
 ```bash
-python3 run_tests.py
-# equivalent when .venv is present:
 .venv/bin/python -m unittest discover -s tests -v
+```
+
+If you installed into your default **`python3`** instead, that works too:
+
+```bash
+python3 -m unittest discover -s tests -v
 ```
 
 This matches the [GitHub Actions workflow](.github/workflows/tests.yml) (CI installs **`requirements.txt`** then runs **`python -m unittest discover -s tests -v`**). The suite does not require Postgres or Strava credentials.
 
-**Note:** `python3 -m unittest discover …` alone uses your system **`python3`**, which often has no project packages installed and can fail importing **`test_hub_department`** with **`ModuleNotFoundError`**. Prefer **`run_tests.py`** or **`.venv/bin/python`** after installing deps.
+**Note:** Using your system **`python3`** without installing **`requirements.txt`** into that interpreter often fails importing **`test_hub_department`** with **`ModuleNotFoundError`**. Use **`.venv/bin/python`** (or whichever environment has the deps) after **`pip install -r requirements.txt`**.
 
 CI also runs **`ruff format --check .`** (see the **`format`** job in that workflow). To run the same check locally, install **`requirements-dev.txt`** and run **`ruff format --check .`**; use **`ruff format .`** to apply the project’s formatting.
 

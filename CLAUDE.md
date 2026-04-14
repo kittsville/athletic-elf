@@ -7,10 +7,10 @@ Before finishing a change (especially opening or updating a PR), **verify both t
 From the **repository root**, with dependencies installed (`pip install -r requirements.txt`):
 
 ```bash
-python3 run_tests.py
+python3 -m unittest discover -s tests -v
 ```
 
-If you use a venv at `.venv`, this is equivalent:
+If you use a venv at `.venv`, use that interpreter so imports match what you installed:
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
