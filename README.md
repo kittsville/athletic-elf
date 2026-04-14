@@ -7,7 +7,7 @@ A Flask app that receives [Strava webhook events](https://developers.strava.com/
 ## How it works
 
 1. An athlete opens **`GET /oauth/start`** to authorize the app. Strava redirects back to **`GET /oauth/callback`** on your **`DOMAIN`** (must match your app’s [Authorization Callback Domain](https://www.strava.com/settings/api)). Tokens and profile are saved in the **`athlete`** table.
-2. On the first successful registration for your Strava application, the app creates a [push subscription](https://developers.strava.com/docs/webhooks/) with callback URL **`{DOMAIN}/webhook`**. Strava allows **only one subscription per application**. Each event includes **`owner_id`**, which is stored on new **`activity`** rows.
+2. On the first successful registration for your Strava application, the app creates a [push subscription](https://developers.strava.com/docs/webhooks/) with callback URL **`{DOMAIN}/webhook/{VERIFY_TOKEN}`** (the token is URL-encoded in the path). Strava allows **only one subscription per application**. Each event includes **`owner_id`**, which is stored on new **`activity`** rows. **`VERIFY_TOKEN`** is required for the app to start (there is no default).
 3. For new activities, a row is inserted into **`activity`** with **`activity_id`** and **`owner_id`** as **`athlete_id`** (pending enrichment).
 4. **`POST /cron`** (with **`Authorization: Bearer`** matching **`CRON_SECRET`**) responds immediately, then processes up to 50 rows still missing **`start_date`** in the background (session cleanup runs there too). On Heroku, use [Scheduler](https://devcenter.heroku.com/articles/scheduler) at **every 10 minutes** (its finest interval) with a **`curl`** that sends that header.
 5. When an activity is deleted, the corresponding **`activity`** row is removed. Athlete deauthorization (`object_type: athlete`, `authorized: false`) removes the **`athlete`** row.
@@ -45,7 +45,7 @@ pip install -r requirements-dev.txt
 | `CLIENT_SECRET`      | Yes*     | —                                                    | Strava application secret |
 | `DOMAIN`             | Yes*     | —                                                    | Public base URL for OAuth redirect and webhooks (e.g. `https://yourapp.example` or `http://127.0.0.1:5000`). A scheme is added if omitted (`https://`). |
 | `SECRET_KEY`         | No       | `dev-change-me`                                      | Flask session secret for OAuth `state` (set in production) |
-| `VERIFY_TOKEN`       | No       | `STRAVA`                                             | Must match the token used when creating the push subscription; Strava echoes it on webhook validation |
+| `VERIFY_TOKEN`       | Yes      | —                                                    | Long random secret: used in the push subscription **`verify_token`** field, echoed by Strava on validation **GET** as **`hub.verify_token`**, and embedded (URL-encoded) as the final path segment of the webhook URL so **`POST /webhook/...`** is not guessable |
 | `CRON_SECRET`        | No†      | —                                                    | If unset, **`POST /cron`** returns **503**. If set, callers must send **`Authorization: Bearer <CRON_SECRET>`**. |
 | `DATABASE_URL`       | No       | `postgresql://strava:strava@localhost:5432/strava`    | Postgres connection string |
 | `ACTIVITY_START_DATE` | No      | —                                                    | ISO 8601 competition start (e.g. `2025-06-01T00:00:00Z` or `2025-06-01` for midnight UTC). On **first** OAuth signup, the app backfills the athlete’s activities from Strava with `GET /athlete/activities?after=<epoch>` in a background thread. If unset or invalid, backfill is skipped. |
@@ -55,10 +55,12 @@ pip install -r requirements-dev.txt
 
 †Set **`CRON_SECRET`** in production when using **`POST /cron`** (e.g. Heroku Scheduler job: `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$DOMAIN/cron"` with **`CRON_SECRET`** and **`DOMAIN`** configured for the app).
 
+The app process will not start unless **`VERIFY_TOKEN`** is set ( **`create_app`** raises **`ValueError`** if it is missing or blank).
+
 ### Run the app
 
 ```bash
-export CLIENT_ID=... CLIENT_SECRET=... DOMAIN=http://127.0.0.1:5000
+export CLIENT_ID=... CLIENT_SECRET=... DOMAIN=http://127.0.0.1:5000 VERIFY_TOKEN=...
 python app.py
 ```
 
@@ -97,13 +99,13 @@ Starts the OAuth 2.0 flow: redirects the user to Strava to approve scopes (`read
 
 Exchanges the authorization code for tokens, upserts **`athlete`** ( **`athlete_id`**, **`firstname`**, **`lastname`**, tokens, **`expires_at`** ), and ensures a push subscription exists when possible.
 
-### `GET /webhook`
+### `GET /webhook/<VERIFY_TOKEN>`
 
-[Webhook validation](https://developers.strava.com/docs/webhooks/#subscription-validation): echoes **`hub.challenge`** when **`hub.verify_token`** matches **`VERIFY_TOKEN`**.
+[Webhook validation](https://developers.strava.com/docs/webhooks/#subscription-validation): the path segment must equal **`VERIFY_TOKEN`** (after URL decoding). Echoes **`hub.challenge`** as JSON when **`hub.mode`** is **`subscribe`** and **`hub.verify_token`** matches **`VERIFY_TOKEN`**. A bare **`GET /webhook`** is not registered.
 
-### `POST /webhook`
+### `POST /webhook/<VERIFY_TOKEN>`
 
-Receives webhook events. **`owner_id`** in the JSON body identifies the athlete for new **`activity`** rows (activity **`create`** events without **`owner_id`** are ignored). Handles activity create/delete and athlete deauthorization.
+Receives webhook events at the same path registered with Strava. **`owner_id`** in the JSON body identifies the athlete for new **`activity`** rows (activity **`create`** events without **`owner_id`** are ignored). Handles activity create/delete and athlete deauthorization.
 
 ### `POST /cron`
 

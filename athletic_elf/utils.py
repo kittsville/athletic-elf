@@ -1,6 +1,7 @@
 """Small helpers (formatting, OAuth base URL, Strava datetimes)."""
 
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from flask import current_app
 
@@ -19,6 +20,21 @@ def domain_base() -> str:
 
 def oauth_redirect_uri() -> str:
     return f"{domain_base()}/oauth/callback"
+
+
+def strava_webhook_callback_url(verify_token: str) -> str:
+    """
+    Full push-subscription callback URL registered with Strava.
+
+    The path ends with a percent-encoded copy of ``verify_token`` so POST events
+    are not accepted at a guessable public path.
+    """
+    vt = verify_token.strip()
+    if not vt:
+        raise ValueError(
+            "VERIFY_TOKEN must be non-empty to build a webhook callback URL"
+        )
+    return f"{domain_base()}/webhook/{quote(vt, safe='')}"
 
 
 def athlete_hub_department_complete(hub: str | None, department: str | None) -> bool:

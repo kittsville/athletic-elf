@@ -96,7 +96,9 @@ class Config:
         default=os.environ.get("FLASK_ENV") != "production",
     )
 
-    VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "STRAVA")
+    # Strava subscription verify_token (GET query) and secret webhook path segment.
+    # create_app() refuses to start if this is empty after loading config.
+    VERIFY_TOKEN = (os.getenv("VERIFY_TOKEN", "") or "").strip()
     # Shared secret for POST /cron (e.g. Heroku Scheduler: curl -H "Authorization: Bearer …").
     CRON_SECRET = (os.getenv("CRON_SECRET", "") or "").strip() or None
     CLIENT_ID = os.getenv("CLIENT_ID")

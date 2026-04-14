@@ -7,7 +7,7 @@ from flask import current_app
 
 from .extensions import db
 from .models import Activity, Athlete
-from .utils import domain_base, parse_strava_datetime
+from .utils import domain_base, parse_strava_datetime, strava_webhook_callback_url
 
 
 def _apply_summary_activity_payload(
@@ -140,14 +140,16 @@ def delete_push_subscription(subscription_id: int) -> None:
 
 def ensure_push_subscription():
     """
-    Strava allows one push subscription per application. Callback is /webhook;
-    each event includes owner_id in the JSON body.
+    Strava allows one push subscription per application. Callback is
+    ``{DOMAIN}/webhook/{VERIFY_TOKEN}`` (token URL-encoded in the path); each event
+    includes owner_id in the JSON body.
 
     If a subscription already exists but points at a different callback URL than
     DOMAIN implies, it is deleted and recreated so the app stays aligned with config.
     """
     cfg = current_app.config
-    callback_url = f"{domain_base()}/webhook"
+    verify = (cfg.get("VERIFY_TOKEN") or "").strip()
+    callback_url = strava_webhook_callback_url(verify)
     expected = _normalize_webhook_callback_url(callback_url)
     replaced_previous = False
     subs = list_push_subscriptions()

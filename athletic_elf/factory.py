@@ -24,6 +24,11 @@ def create_app(config_class: type = Config) -> Flask:
         template_folder=os.path.join(pkg_dir, "..", "templates"),
     )
     app.config.from_object(config_class)
+    if not (str(app.config.get("VERIFY_TOKEN") or "").strip()):
+        raise ValueError(
+            "VERIFY_TOKEN must be set (environment variable or on the Flask Config class). "
+            "It is used for Strava subscription validation and the webhook URL path."
+        )
     app.config["APP_DEVELOPER_IDS"] = parse_app_developer_ids()
     app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_activity_start_epoch(
         app.config.get("ACTIVITY_START_DATE")
