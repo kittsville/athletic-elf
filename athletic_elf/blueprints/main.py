@@ -100,7 +100,10 @@ def _summaries_by_hub_and_department(
 
 
 def _can_perform_organiser_tasks(athlete: Athelete) -> bool:
-    return athlete.is_organiser or int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    return (
+        athlete.is_organiser
+        or int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    )
 
 
 @bp.context_processor
@@ -368,7 +371,9 @@ def bonuses():
                 elif kind == "department" and target_value in dept_set:
                     resolved_target = target_value
                 else:
-                    error = "Target must be a hub or department from the configured lists."
+                    error = (
+                        "Target must be a hub or department from the configured lists."
+                    )
 
         if error is None and resolved_target is not None:
             db.session.add(
