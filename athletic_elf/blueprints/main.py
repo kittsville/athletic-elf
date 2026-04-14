@@ -1,8 +1,5 @@
-"""HTML pages, logout, data deletion, and cron."""
+"""HTML pages, logout, and data deletion."""
 
-import secrets
-import threading
-from collections import defaultdict
 from datetime import datetime, timezone
 
 from flask import (
@@ -16,13 +13,14 @@ from flask import (
     session,
     url_for,
 )
-from points import activities_total_points, discipline_totals_for_activities, team_points
+from points import activities_total_points
 from sqlalchemy.orm import joinedload, load_only
 
 from ..extensions import db
+from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
 from ..models import Activity, Athlete, Bonus, BrowserSession
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
-from ..strava_service import process_activities
+from ..team_scoring import summaries_by_hub_and_department
 from ..utils import (
     activity_start_date_for_display,
     athlete_display_name,
@@ -32,78 +30,10 @@ from ..utils import (
 bp = Blueprint("main", __name__)
 
 
-def _activities_by_athlete_scored() -> dict[int, list[Activity]]:
-    """Activities with a start_date, grouped by Strava athlete id."""
-    activities = (
-        Activity.query.filter(
-            Activity.athlete_id.isnot(None),
-            Activity.start_date.isnot(None),
-        )
-        .order_by(Activity.athlete_id, Activity.id)
-        .all()
-    )
-    by_athlete: defaultdict[int, list] = defaultdict(list)
-    for a in activities:
-        by_athlete[int(a.athlete_id)].append(a)
-    return by_athlete
-
-
 def _points_by_athlete_strava_id() -> dict[int, int]:
     """Total points per Strava athlete id (activities with a start_date only)."""
-    by_athlete = _activities_by_athlete_scored()
+    by_athlete = activities_by_athlete_scored()
     return {aid: activities_total_points(acts) for aid, acts in by_athlete.items()}
-
-
-def _summaries_by_hub_and_department(
-    points_by: dict[int, int],
-    hub_options: list[str],
-    department_options: list[str],
-) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
-    """Per hub/department: team_points() over each member's total points (see points.team_points)."""
-    hub_set = frozenset(hub_options)
-    dept_set = frozenset(department_options)
-    hub_member_points: defaultdict[str, list[int]] = defaultdict(list)
-    dept_member_points: defaultdict[str, list[int]] = defaultdict(list)
-    athletes = Athlete.query.options(
-        load_only(Athlete.athlete_id, Athlete.hub, Athlete.department)
-    ).all()
-    for a in athletes:
-        aid = int(a.athlete_id)
-        pts = points_by.get(aid, 0)
-        h = (a.hub or "").strip()
-        if h in hub_set:
-            hub_member_points[h].append(pts)
-        d = (a.department or "").strip()
-        if d in dept_set:
-            dept_member_points[d].append(pts)
-    hub_bonus: defaultdict[str, int] = defaultdict(int)
-    dept_bonus: defaultdict[str, int] = defaultdict(int)
-    for b in Bonus.query.all():
-        t = b.target.strip()
-        if t in hub_set:
-            hub_bonus[t] += int(b.points)
-        elif t in dept_set:
-            dept_bonus[t] += int(b.points)
-
-    hub_rows = [
-        {
-            "name": h,
-            "athlete_count": len(hub_member_points[h]),
-            "points": float(team_points(hub_member_points[h])) + hub_bonus.get(h, 0),
-        }
-        for h in hub_options
-    ]
-    dept_rows = [
-        {
-            "name": d,
-            "athlete_count": len(dept_member_points[d]),
-            "points": float(team_points(dept_member_points[d])) + dept_bonus.get(d, 0),
-        }
-        for d in department_options
-    ]
-    hub_rows.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
-    dept_rows.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
-    return hub_rows, dept_rows
 
 
 def _can_perform_organiser_tasks(athlete: Athlete) -> bool:
@@ -218,178 +148,9 @@ def logout():
     return redirect(url_for("main.index"))
 
 
-def _cron_authorization_ok(expected: str, authorization: str | None) -> bool:
-    if not authorization or not authorization.startswith("Bearer "):
-        return False
-    presented = authorization.removeprefix("Bearer ").strip()
-    return secrets.compare_digest(presented, expected)
-
-
-def _run_cron_maintenance(app) -> None:
-    """Session cleanup and activity enrichment; must run inside ``app.app_context()``."""
-    with app.app_context():
-        try:
-            now = datetime.now(timezone.utc)
-            removed_sessions = BrowserSession.query.filter(
-                BrowserSession.expires_at < now
-            ).delete(synchronize_session=False)
-            n = process_activities(50)
-            db.session.commit()
-            summary = (
-                f"Processed {n} activities, removed {removed_sessions} expired session(s)"
-            )
-            app.logger.info(summary)
-        except Exception:
-            db.session.rollback()
-            app.logger.exception("cron maintenance failed")
-
-
-@bp.post("/cron")
-def cron():
-    expected = current_app.config.get("CRON_SECRET")
-    if not expected:
-        abort(
-            503,
-            description="Cron is not configured (set CRON_SECRET in the environment).",
-        )
-    if not _cron_authorization_ok(expected, request.headers.get("Authorization")):
-        abort(403)
-    app = current_app._get_current_object()
-    threading.Thread(
-        target=_run_cron_maintenance,
-        args=(app,),
-        daemon=True,
-    ).start()
-    return ("Processing Started", 200)
-
-
-# slug, title, description, column heading for stat, sort key ("points" = total activity points)
-_LEADERBOARD_SPECS: tuple[tuple[str, str, str, str, str], ...] = (
-    (
-        "shark",
-        "The Shark",
-        "Most swimming km: for the pool sharks hitting those 400m intervals.",
-        "Swimming (km)",
-        "swim_km",
-    ),
-    (
-        "explorer",
-        "The Explorer",
-        "Most walking km: for the high-volume steppers who never take the elevator.",
-        "Walking (km)",
-        "walk_km",
-    ),
-    (
-        "powerhouse",
-        "The Powerhouse",
-        "Most hard fitness minutes: for the heavy lifters, HIIT enthusiasts, and "
-        "football/basketball players.",
-        "Hard fitness (min)",
-        "hard_min",
-    ),
-    (
-        "centurion",
-        "The Centurion",
-        "Most cycling km: for the road warriors and Peloton fans.",
-        "Cycling (km)",
-        "cycle_km",
-    ),
-    (
-        "marathoner",
-        "The Marathoner",
-        "Most running km: for those putting in the pavement miles.",
-        "Running (km)",
-        "run_km",
-    ),
-    (
-        "zen",
-        "The Zen Master",
-        "Most yoga or stretching minutes: for the mobility and recovery specialists.",
-        "Yoga / stretching (min)",
-        "zen_min",
-    ),
-    (
-        "mvp",
-        "The MVP",
-        "Person with the most total points.",
-        "Points",
-        "points",
-    ),
-)
-
-
-def _leaderboard_sections() -> list[dict[str, object]]:
-    """Top 10 per discipline for the public leaders page."""
-    by_athlete = _activities_by_athlete_scored()
-    if not by_athlete:
-        return [
-            {
-                "slug": s[0],
-                "title": s[1],
-                "description": s[2],
-                "stat_header": s[3],
-                "rows": [],
-            }
-            for s in _LEADERBOARD_SPECS
-        ]
-
-    athlete_ids = list(by_athlete.keys())
-    profiles = {
-        int(a.athlete_id): a
-        for a in Athlete.query.filter(Athlete.athlete_id.in_(athlete_ids)).all()
-    }
-
-    def _name(aid: int) -> str:
-        p = profiles.get(aid)
-        if p is None:
-            return f"Athlete {aid}"
-        return athlete_display_name(p.firstname or "", p.lastname or "")
-
-    stats_rows: list[tuple[int, dict[str, float | int], int]] = []
-    for aid, acts in by_athlete.items():
-        d = discipline_totals_for_activities(acts)
-        pts = activities_total_points(acts)
-        stats_rows.append((aid, d, pts))
-
-    def top10(stat_key: str) -> list[dict[str, object]]:
-        if stat_key == "points":
-            ranked = sorted(
-                stats_rows,
-                key=lambda t: (-int(t[2]), int(t[0])),
-            )
-        else:
-            ranked = sorted(
-                stats_rows,
-                key=lambda t: (-float(t[1][stat_key]), int(t[0])),
-            )
-        out: list[dict[str, object]] = []
-        for rank, (aid, d, pts) in enumerate(ranked[:10], start=1):
-            if stat_key == "points":
-                stat_display = str(int(pts))
-            elif stat_key.endswith("_km"):
-                stat_display = f"{float(d[stat_key]):.1f} km"
-            else:
-                stat_display = f"{int(d[stat_key])} min"
-            out.append({"rank": rank, "name": _name(aid), "stat_display": stat_display})
-        while len(out) < 10:
-            out.append({"rank": len(out) + 1, "name": "—", "stat_display": "—"})
-        return out
-
-    return [
-        {
-            "slug": s[0],
-            "title": s[1],
-            "description": s[2],
-            "stat_header": s[3],
-            "rows": top10(s[4]),
-        }
-        for s in _LEADERBOARD_SPECS
-    ]
-
-
 @bp.get("/leaders")
 def leaders():
-    sections = _leaderboard_sections()
+    sections = leaderboard_sections()
     return render_template("leaders.html", sections=sections)
 
 
@@ -400,7 +161,7 @@ def results():
     points_by = _points_by_athlete_strava_id()
     hubs = current_app.config["HUB_OPTIONS"]
     departments = current_app.config["DEPARTMENT_OPTIONS"]
-    hub_summary, department_summary = _summaries_by_hub_and_department(
+    hub_summary, department_summary = summaries_by_hub_and_department(
         points_by, hubs, departments
     )
     rows: list[dict[str, object]] = []

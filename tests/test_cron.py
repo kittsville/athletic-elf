@@ -49,7 +49,7 @@ class TestCronEndpoint(unittest.TestCase):
         r = client.post("/cron", headers={"Authorization": "Bearer wrong"})
         self.assertEqual(r.status_code, 403)
 
-    @patch("athletic_elf.blueprints.main.threading.Thread", _ImmediateThread)
+    @patch("athletic_elf.blueprints.cron.threading.Thread", _ImmediateThread)
     def test_accepts_bearer_secret_and_runs_maintenance_inline(self):
         app = create_app(_TestHubDeptConfig)
         app.config["TESTING"] = True

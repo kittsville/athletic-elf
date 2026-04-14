@@ -3,7 +3,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from athletic_elf.blueprints.main import _summaries_by_hub_and_department
+from athletic_elf.team_scoring import summaries_by_hub_and_department
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
 from athletic_elf.models import Athlete, Bonus
@@ -53,7 +53,7 @@ class TestBonusHubDepartmentTotals(unittest.TestCase):
             db.session.commit()
 
             points_by = {910_000 + i: 10 for i in range(5)}
-            hub_rows, dept_rows = _summaries_by_hub_and_department(
+            hub_rows, dept_rows = summaries_by_hub_and_department(
                 points_by,
                 list(self.app.config["HUB_OPTIONS"]),
                 list(self.app.config["DEPARTMENT_OPTIONS"]),

@@ -54,9 +54,10 @@ def create_app(config_class: type = Config) -> Flask:
 
     from . import models  # noqa: F401 — register models with SQLAlchemy
 
-    from .blueprints import main, oauth, webhook
+    from .blueprints import cron, main, oauth, webhook
 
     app.register_blueprint(main.bp)
+    app.register_blueprint(cron.bp)
     app.register_blueprint(oauth.bp)
     app.register_blueprint(webhook.bp)
 
@@ -74,7 +75,7 @@ def create_app(config_class: type = Config) -> Flask:
         }
     )
     endpoints_skip_session_lookup = frozenset(
-        {"webhook.webhook_get", "webhook.webhook_post", "main.cron"}
+        {"webhook.webhook_get", "webhook.webhook_post", "cron.cron"}
     )
 
     @app.before_request
