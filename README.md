@@ -25,16 +25,30 @@ A Flask app that receives [Strava webhook events](https://developers.strava.com/
 docker compose up -d
 ```
 
+### Set up Virtual Environment
+
+Don't go installing Python libraries to your system.
+
+```bash
+python3 -m venv .venv
+```
+
+Then every time you want to run the app make sure to enter the virtual environment
+
+```bash
+source .venv/bin/activate
+```
+
 ### Install dependencies
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 That file is **not** merged with anything else automatically. For optional dev tooling (e.g. [Ruff](https://docs.astral.sh/ruff/) to match CI formatting checks), install explicitly:
 
 ```bash
-pip install -r requirements-dev.txt
+pip3 install -r requirements-dev.txt
 ```
 
 ### Environment variables
@@ -71,20 +85,7 @@ For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0
 
 ## Tests
 
-Use a virtualenv and install dependencies so `flask_sqlalchemy` and the rest of **`requirements.txt`** are on the same interpreter you use to run tests:
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-```
-
-From the repository root, run the suite with the same Python you installed into (the venv’s **`python`** if you created **`.venv`**):
-
-```bash
-.venv/bin/python -m unittest discover -s tests -v
-```
-
-If you installed into your default **`python3`** instead, that works too:
+Assuming you've already entered the virtual environment and installed dependencies:
 
 ```bash
 python3 -m unittest discover -s tests -v
