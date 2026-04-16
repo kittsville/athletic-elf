@@ -53,6 +53,8 @@ pip3 install -r requirements-dev.txt
 
 ### Environment variables
 
+Copy `.env.example` to `.env`. We'll set up some of the values before starting the app. An explanation of their purpose:
+
 | Variable             | Required | Default                                              | Description |
 |----------------------|----------|------------------------------------------------------|-------------|
 | `CLIENT_ID`          | Yes*     | —                                                    | Strava application Client ID |
@@ -74,14 +76,32 @@ The app process will not start unless **`VERIFY_TOKEN`** is set ( **`create_app`
 
 The app always sets **`SESSION_COOKIE_SAMESITE = "Lax"`**. After loading config, **`create_app`** sets **`SESSION_COOKIE_SECURE`** from **`ENFORCE_HTTPS`** so session cookies are only sent over TLS when HTTPS is enforced.
 
-### Run the app
+### ngrok
 
+To run the app locally Strava needs a public URL to send the webhook events to. So install ngrok/tailscale/whatever:
 ```bash
-export CLIENT_ID=... CLIENT_SECRET=... DOMAIN=http://127.0.0.1:5000 VERIFY_TOKEN=... ENFORCE_HTTPS=0
-python app.py
+brew install ngrok
 ```
 
-For local OAuth, use a **`DOMAIN`** Strava accepts (e.g. `localhost` or `127.0.0.1`) and register the same host in your Strava API application settings. Use **`ENFORCE_HTTPS=0`** when using plain HTTP locally ( **`FLASK_ENV=production`** would otherwise default **`ENFORCE_HTTPS`** on and block **`http://`** ).
+Start ngrok:
+
+```bash
+ngrok http 80
+```
+
+Copy the public URL (e.g. `https://f744-45-148-12-62.ngrok-free.app`) and set that as the `DOMAIN` in your `.env` file. You'll also need the raw domain when creating an App on Strava (e.g. `f744-45-148-12-62.ngrok-free.app`)
+
+### Set up a Strava App
+
+You need to create a Strava App in order to get access to Strava data. [Create a Strava app](https://www.strava.com/settings/api) then copy the client ID and secret into your `.env` file. Set the _Authorization Callback Domain_ to your raw domain from ngrok (e.g. `f744-45-148-12-62.ngrok-free.app`). Every time you restart ngrok you'll need to copy the new domain into your `.env` file and update the _Authorization Callback Domain_ in your Strava app's settings.
+
+### Run the app
+
+Assuming you've already entered the virtual environment and in two separate tabs have Postgres + ngrok running:
+
+```bash
+python3 app.py
+```
 
 ## Tests
 
