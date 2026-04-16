@@ -35,9 +35,8 @@
         <td>{{ row.score }}</td>
         <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser, row.is_active) }}</td>
         <td>
-          {% if row.is_organiser or row.is_app_developer %}
-            <span class="muted">—</span>
-          {% else %}
+          {% set can_manage_role = not (row.is_organiser or row.is_app_developer) %}
+          {% if can_manage_role %}
             <form
               method="post"
               action="{{ url_for('main.athletes_make_organiser', athlete_pk=row.athlete_pk) }}"
@@ -58,7 +57,7 @@
           <form
             method="post"
             action="{{ url_for('main.athletes_resync_activities', athlete_pk=row.athlete_pk) }}"
-            style="display: inline; margin-left: 0.35rem;"
+            style="display: inline;{% if can_manage_role %} margin-left: 0.35rem;{% endif %}"
           >
             <button type="submit">Re-import activities</button>
           </form>
