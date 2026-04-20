@@ -5,16 +5,15 @@ from collections import defaultdict
 from points import team_points
 from sqlalchemy.orm import load_only
 
-from .extensions import db
 from .models import Athlete, Bonus
 
 
-def summaries_by_hub_and_department(
+def hub_and_department_member_point_lists(
     points_by: dict[int, int],
-    hub_options: list[str],
-    department_options: list[str],
-) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
-    """Per hub/department: team_points() over each member's total points (see points.team_points)."""
+    hub_options: tuple[str, ...] | list[str],
+    department_options: tuple[str, ...] | list[str],
+) -> tuple[defaultdict[str, list[int]], defaultdict[str, list[int]]]:
+    """Active athletes' points lists per hub and per department (no bonuses)."""
     hub_set = frozenset(hub_options)
     dept_set = frozenset(department_options)
     hub_member_points: defaultdict[str, list[int]] = defaultdict(list)
@@ -35,6 +34,20 @@ def summaries_by_hub_and_department(
         d = (a.department or "").strip()
         if d in dept_set:
             dept_member_points[d].append(pts)
+    return hub_member_points, dept_member_points
+
+
+def summaries_by_hub_and_department(
+    points_by: dict[int, int],
+    hub_options: list[str],
+    department_options: list[str],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    """Per hub/department: team_points() over each member's total points (see points.team_points)."""
+    hub_set = frozenset(hub_options)
+    dept_set = frozenset(department_options)
+    hub_member_points, dept_member_points = hub_and_department_member_point_lists(
+        points_by, hub_options, department_options
+    )
     hub_bonus: defaultdict[str, int] = defaultdict(int)
     dept_bonus: defaultdict[str, int] = defaultdict(int)
     for b in Bonus.query.all():

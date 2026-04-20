@@ -24,6 +24,9 @@ class _WebhookConfig(Config):
     CLIENT_SECRET = "x"
     HUB_OPTIONS = ("North Hub",)
     DEPARTMENT_OPTIONS = ("Engineering",)
+    ACTIVITY_START_DATE = "2020-01-01T00:00:00+00:00"
+    WEEK_BOUNDARIES = ""
+    ACTIVITY_END_DATE = "2030-01-01T00:00:00+00:00"
 
 
 class TestStravaWebhookCallbackUrl(unittest.TestCase):
@@ -147,12 +150,15 @@ class TestWebhookEncodedPathSegment(unittest.TestCase):
         VERIFY_TOKEN = "a b"
         CLIENT_ID = "1"
         CLIENT_SECRET = "x"
+        ACTIVITY_START_DATE = "2020-01-01T00:00:00+00:00"
+        WEEK_BOUNDARIES = ""
+        ACTIVITY_END_DATE = "2030-01-01T00:00:00+00:00"
 
     def test_get_with_encoded_path(self):
         app = create_app(self._Tok)
         client = app.test_client()
         seg = quote("a b", safe="")
-        q = f"hub.mode=subscribe&hub.verify_token=a%20b&hub.challenge=z"
+        q = "hub.mode=subscribe&hub.verify_token=a%20b&hub.challenge=z"
         r = client.get(f"/webhook/{seg}?{q}")
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.json, {"hub.challenge": "z"})

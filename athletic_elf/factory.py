@@ -6,15 +6,43 @@ import os
 import click
 from flask import Flask, Response, current_app, g, redirect, request, url_for
 
+from .competition_periods import period_specs_for_config
 from .config import (
     Config,
     parse_activity_start_epoch,
     parse_app_developer_ids,
     parse_comma_options,
+    parse_datetime_utc,
+    parse_week_boundary_datetimes,
 )
 from .extensions import db
 from .session import current_athlete_from_request
 from .utils import athlete_role_label, format_moving_time
+
+
+def _require_competition_schedule(app: Flask) -> None:
+    """Weekly hub/department scoring requires a valid competition window (see competition_periods)."""
+    start = app.config.get("ACTIVITY_START_DATETIME")
+    boundaries = app.config.get("WEEK_BOUNDARY_DATETIMES") or ()
+    end = app.config.get("ACTIVITY_END_DATETIME")
+    if start is None:
+        raise ValueError(
+            "ACTIVITY_START_DATE must be set to a valid ISO 8601 datetime "
+            "(competition start; used for Strava backfill and scoring periods)."
+        )
+    if end is None:
+        raise ValueError(
+            "ACTIVITY_END_DATE must be set to a valid ISO 8601 datetime "
+            "(competition end; final scoring period boundary and activity cutoff)."
+        )
+    specs = period_specs_for_config(start, boundaries, end)
+    if not specs:
+        raise ValueError(
+            "Competition schedule must define at least one scoring period: "
+            "ensure ACTIVITY_END_DATE is after ACTIVITY_START_DATE, and that "
+            "WEEK_BOUNDARIES (comma-separated period ends) together with ACTIVITY_END_DATE "
+            "produce at least one period end strictly after the competition start."
+        )
 
 
 def _request_is_https() -> bool:
@@ -44,6 +72,16 @@ def create_app(config_class: type = Config) -> Flask:
     app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_activity_start_epoch(
         app.config.get("ACTIVITY_START_DATE")
     )
+    app.config["ACTIVITY_START_DATETIME"] = parse_datetime_utc(
+        app.config.get("ACTIVITY_START_DATE")
+    )
+    app.config["WEEK_BOUNDARY_DATETIMES"] = parse_week_boundary_datetimes(
+        app.config.get("WEEK_BOUNDARIES") or ""
+    )
+    app.config["ACTIVITY_END_DATETIME"] = parse_datetime_utc(
+        app.config.get("ACTIVITY_END_DATE")
+    )
+    _require_competition_schedule(app)
     # Allow tests (or custom Config subclasses) to pin options; otherwise env wins.
     if getattr(config_class, "HUB_OPTIONS", None) is None:
         app.config["HUB_OPTIONS"] = parse_comma_options(
@@ -90,6 +128,7 @@ def create_app(config_class: type = Config) -> Flask:
             "main.athletes_resync_activities",
             "main.bonuses",
             "main.bonus_delete",
+            "main.organiser_weeks",
         }
     )
     endpoints_skip_session_lookup = frozenset(

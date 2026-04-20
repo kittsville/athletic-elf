@@ -27,12 +27,11 @@ def parse_comma_options(raw: str | None, default: str) -> tuple[str, ...]:
     return tuple(p.strip() for p in s.split(",") if p.strip())
 
 
-def parse_activity_start_epoch(iso_value: str | None) -> int | None:
+def parse_datetime_utc(iso_value: str | None) -> datetime | None:
     """
-    Competition start instant as Unix epoch seconds for Strava's `after` query param.
+    Parse ISO 8601 datetime or date-only string into an aware UTC datetime.
 
-    Accepts ISO 8601 datetimes (with optional `Z`) or a date-only `YYYY-MM-DD`
-    (interpreted as midnight UTC).
+    Returns None when unset or invalid (warnings logged for invalid input).
     """
     if not iso_value:
         return None
@@ -47,9 +46,7 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
         try:
             d = date.fromisoformat(raw)
         except ValueError:
-            _log.warning(
-                "Invalid ACTIVITY_START_DATE %r; skipping historical sync", raw
-            )
+            _log.warning("Invalid datetime %r; treating as unset", raw)
             return None
         dt = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
     else:
@@ -57,7 +54,48 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
             dt = dt.replace(tzinfo=timezone.utc)
         else:
             dt = dt.astimezone(timezone.utc)
+    return dt
+
+
+def parse_activity_start_epoch(iso_value: str | None) -> int | None:
+    """
+    Competition start instant as Unix epoch seconds for Strava's `after` query param.
+
+    Accepts ISO 8601 datetimes (with optional `Z`) or a date-only `YYYY-MM-DD`
+    (interpreted as midnight UTC).
+    """
+    dt = parse_datetime_utc(iso_value)
+    if dt is None:
+        if iso_value and str(iso_value).strip():
+            _log.warning(
+                "Invalid ACTIVITY_START_DATE %r; skipping historical sync",
+                iso_value,
+            )
+        return None
     return int(dt.timestamp())
+
+
+def parse_week_boundary_datetimes(raw: str | None) -> tuple[datetime, ...]:
+    """Comma-separated ISO timestamps (same rules as ACTIVITY_START_DATE), sorted unique."""
+    if not raw or not str(raw).strip():
+        return ()
+    out: list[datetime] = []
+    for part in str(raw).split(","):
+        part = part.strip()
+        if not part:
+            continue
+        dt = parse_datetime_utc(part)
+        if dt is not None:
+            out.append(dt)
+    out.sort()
+    # de-dupe while preserving order
+    seen: set[datetime] = set()
+    unique: list[datetime] = []
+    for dt in out:
+        if dt not in seen:
+            seen.add(dt)
+            unique.append(dt)
+    return tuple(unique)
 
 
 def _env_bool(name: str, *, default: bool) -> bool:
@@ -122,7 +160,14 @@ class Config:
     # SESSION_COOKIE_SECURE is applied in create_app() from the resolved ENFORCE_HTTPS flag.
     SESSION_COOKIE_SAMESITE = "Lax"
 
-    # ISO 8601: competition start (e.g. 2025-06-01T00:00:00Z). Used for backfill `after`.
+    # Required at app startup (validated in create_app): ISO 8601 competition start; Strava
+    # backfill uses this as `after` epoch.
     ACTIVITY_START_DATE = os.environ.get("ACTIVITY_START_DATE", "").strip() or None
+    # Comma-separated ISO instants: end of each scoring period (exclusive upper bound on
+    # activity start_date). Merged with ACTIVITY_END_DATE. May be empty if only one period
+    # from ACTIVITY_START_DATE to ACTIVITY_END_DATE is needed.
+    WEEK_BOUNDARIES = os.environ.get("WEEK_BOUNDARIES", "").strip() or None
+    # Required at app startup: final period boundary; activities starting after this are excluded.
+    ACTIVITY_END_DATE = os.environ.get("ACTIVITY_END_DATE", "").strip() or None
     # Strava allows up to 200 per page for GET /athlete/activities.
     STRAVA_ACTIVITIES_PAGE_SIZE = 200

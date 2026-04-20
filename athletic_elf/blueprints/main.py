@@ -17,9 +17,14 @@ from points import activities_total_points
 from sqlalchemy.orm import joinedload, load_only
 
 from ..background import schedule_initial_activity_sync
+from ..competition_periods import (
+    aggregates_frozen_team_scores,
+    period_spec_for_index,
+    points_by_athlete_for_results_table,
+)
 from ..extensions import db
 from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
-from ..models import Activity, Athlete, Bonus, BrowserSession
+from ..models import Activity, Athlete, Bonus, BrowserSession, Week, WeekScore
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..team_scoring import summaries_by_hub_and_department
 from ..utils import (
@@ -160,12 +165,21 @@ def leaders():
 def results():
     athlete = g.current_athlete
     show_athlete_points = _can_perform_organiser_tasks(athlete)
-    points_by = _points_by_athlete_strava_id()
+    points_by = points_by_athlete_for_results_table(current_app)
     hubs = current_app.config["HUB_OPTIONS"]
     departments = current_app.config["DEPARTMENT_OPTIONS"]
+    hub_frozen, dept_frozen = aggregates_frozen_team_scores(
+        list(hubs), list(departments)
+    )
     hub_summary, department_summary = summaries_by_hub_and_department(
         points_by, hubs, departments
     )
+    for row in hub_summary:
+        row["points"] = float(row["points"]) + hub_frozen.get(str(row["name"]), 0.0)
+    for row in department_summary:
+        row["points"] = float(row["points"]) + dept_frozen.get(str(row["name"]), 0.0)
+    hub_summary.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
+    department_summary.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
     rows: list[dict[str, object]] = []
     if show_athlete_points:
         for athlete_id, pts in points_by.items():
@@ -192,6 +206,31 @@ def results():
         hub_summary=hub_summary,
         department_summary=department_summary,
     )
+
+
+@bp.get("/organiser/weeks")
+def organiser_weeks():
+    athlete = g.current_athlete
+    if not _can_perform_organiser_tasks(athlete):
+        abort(403)
+    weeks = Week.query.order_by(Week.period_index.asc()).all()
+    sections: list[dict[str, object]] = []
+    for wk in weeks:
+        scores = (
+            WeekScore.query.filter_by(week_id=wk.id)
+            .order_by(WeekScore.team_scope.asc(), WeekScore.target.asc())
+            .all()
+        )
+        spec = period_spec_for_index(current_app, wk.period_index)
+        sections.append(
+            {
+                "week": wk,
+                "spec": spec,
+                "scores": scores,
+                "computed_at": wk.summarized_at,
+            }
+        )
+    return render_template("organiser_weeks.html", sections=sections)
 
 
 @bp.get("/athletes")

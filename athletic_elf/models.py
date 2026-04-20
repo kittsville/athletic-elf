@@ -31,6 +31,59 @@ class Activity(db.Model):
     sport_type = db.Column(db.String(255), nullable=True)
     start_date = db.Column(db.DateTime, nullable=True)
     moving_time = db.Column(db.Integer, nullable=True)
+    week_id = db.Column(
+        db.Integer,
+        db.ForeignKey("week.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    week = db.relationship("Week", back_populates="activities")
+
+
+class Week(db.Model):
+    """One closed scoring time window (aligned with config period index)."""
+
+    __tablename__ = "week"
+
+    id = db.Column(db.Integer, primary_key=True)
+    period_index = db.Column(db.Integer, nullable=False, unique=True, index=True)
+    summarized_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+    scores = db.relationship(
+        "WeekScore",
+        back_populates="week",
+        cascade="all, delete-orphan",
+    )
+    activities = db.relationship("Activity", back_populates="week")
+
+
+class WeekScore(db.Model):
+    """Frozen hub or department team points when a week boundary is summarized."""
+
+    __tablename__ = "week_score"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "week_id",
+            "team_scope",
+            "target",
+            name="uq_week_score_scope_target",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    week_id = db.Column(
+        db.Integer,
+        db.ForeignKey("week.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target = db.Column(db.String(255), nullable=False)
+    team_scope = db.Column(db.String(32), nullable=False)
+    points = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+    week = db.relationship("Week", back_populates="scores")
 
 
 class BrowserSession(db.Model):

@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, abort, current_app, request
 
+from ..competition_periods import summarize_due_periods_loop
 from ..extensions import db
 from ..models import BrowserSession
 from ..strava_service import process_activities
@@ -29,8 +30,12 @@ def run_cron_maintenance(app) -> None:
                 BrowserSession.expires_at < now
             ).delete(synchronize_session=False)
             n = process_activities(50)
+            n_periods = summarize_due_periods_loop(app)
             db.session.commit()
-            summary = f"Processed {n} activities, removed {removed_sessions} expired session(s)"
+            summary = (
+                f"Processed {n} activities, removed {removed_sessions} expired session(s), "
+                f"summarized {n_periods} competition period(s)"
+            )
             app.logger.info(summary)
         except Exception:
             db.session.rollback()

@@ -7,7 +7,7 @@ from flask import current_app
 
 from .extensions import db
 from .models import Activity, Athlete
-from .utils import domain_base, parse_strava_datetime, strava_webhook_callback_url
+from .utils import parse_strava_datetime, strava_webhook_callback_url
 
 
 def _apply_summary_activity_payload(

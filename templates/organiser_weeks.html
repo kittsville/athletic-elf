@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Weeks{% endblock %}
+{% block extra_head %}
+  <style>
+    table { border-collapse: collapse; margin-bottom: 2rem; width: 100%; max-width: 52rem; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; text-align: left; }
+    th { background: #f5f5f5; }
+    tr:nth-child(even) { background: #fafafa; }
+    h2 { font-size: 1.1rem; margin: 0 0 0.35rem 0; }
+    section.period { margin-bottom: 2rem; }
+    .meta { color: #444; font-size: 0.9rem; margin: 0 0 0.75rem 0; }
+  </style>
+{% endblock %}
+{% block content %}
+  <h1>Computed competition periods</h1>
+  <p class="meta">Each <strong>Week</strong> row is one closed scoring window.</p>
+  {% if not sections %}
+  <p>No periods have been summarised yet.</p>
+  {% endif %}
+  {% for block in sections %}
+  {% set wk = block.week %}
+  <section class="period" aria-labelledby="week-heading-{{ wk.id }}">
+    <h2 id="week-heading-{{ wk.id }}">Period {{ wk.period_index }}</h2>
+    {% if block.spec %}
+    <p class="meta">Canonical window {{ block.spec.canonical_start }} &ndash; {{ block.spec.end_exclusive }} (end exclusive). Summarised at {{ block.computed_at }}.</p>
+    {% else %}
+    <p class="meta">Summarised at {{ block.computed_at }}. (Period index is not in the current config window list.)</p>
+    {% endif %}
+    <table>
+      <thead>
+        <tr><th>Scope</th><th>Target</th><th>Points</th><th>Row created</th></tr>
+      </thead>
+      <tbody>
+        {% for s in block.scores %}
+        <tr>
+          <td>{{ s.team_scope }}</td>
+          <td>{{ s.target }}</td>
+          <td>{{ "%.2f"|format(s.points) }}</td>
+          <td>{{ s.created_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+{% endblock %}

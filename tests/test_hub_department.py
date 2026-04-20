@@ -22,6 +22,9 @@ class _TestHubDeptConfig(Config):
     # Fixed options so tests do not depend on HUB_OPTIONS / DEPARTMENT_OPTIONS in os.environ.
     HUB_OPTIONS = ("North Hub", "South Hub", "East Hub", "West Hub")
     DEPARTMENT_OPTIONS = ("Engineering", "Sales", "Marketing", "Operations")
+    ACTIVITY_START_DATE = "2020-01-01T00:00:00+00:00"
+    WEEK_BOUNDARIES = ""
+    ACTIVITY_END_DATE = "2030-01-01T00:00:00+00:00"
 
 
 class TestParseCommaOptions(unittest.TestCase):

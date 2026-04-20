@@ -20,6 +20,9 @@ class _LeadersTestConfig(Config):
     AUTO_CREATE_TABLES = True
     HUB_OPTIONS = ("North Hub",)
     DEPARTMENT_OPTIONS = ("Engineering",)
+    ACTIVITY_START_DATE = "2020-01-01T00:00:00+00:00"
+    WEEK_BOUNDARIES = ""
+    ACTIVITY_END_DATE = "2030-01-01T00:00:00+00:00"
 
 
 _D0 = datetime(2025, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
