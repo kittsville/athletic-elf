@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Forbidden{% endblock %}
+{% block extra_head %}
+  <style>
+    .error-page h1 { font-size: 1.5rem; margin: 0 0 0.5rem 0; }
+    .error-page p.sub { color: #555; margin: 0 0 1rem 0; font-size: 1.05rem; }
+    .error-page p.hint { color: #666; font-size: 0.95rem; }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="error-page">
+    <h1>Forbidden</h1>
+    <p class="sub">You don’t have permission to view this page.</p>
+    <p class="hint"><a href="{{ url_for('main.index') }}">Back to home</a></p>
+  </div>
+{% endblock %}

@@ -4,7 +4,16 @@ import logging
 import os
 
 import click
-from flask import Flask, Response, current_app, g, redirect, request, url_for
+from flask import (
+    Flask,
+    Response,
+    current_app,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from .competition_periods import period_specs_for_config
 from .config import (
@@ -44,6 +53,17 @@ def _require_competition_schedule(app: Flask) -> None:
             "WEEK_BOUNDARIES (comma-separated period ends) together with COMPETITION_END_DATETIME "
             "produce at least one period end strictly after the competition start."
         )
+
+
+def _show_organiser_nav_for_template() -> bool:
+    """Match main blueprint nav: organisers and app developers see organiser links."""
+    athlete = getattr(g, "current_athlete", None)
+    if athlete is None:
+        return False
+    return (
+        bool(athlete.is_organiser)
+        or int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    )
 
 
 def _request_is_https() -> bool:
@@ -114,6 +134,26 @@ def create_app(config_class: type = Config) -> Flask:
     app.register_blueprint(cron.bp)
     app.register_blueprint(oauth.bp)
     app.register_blueprint(webhook.bp)
+
+    @app.errorhandler(404)
+    def http_not_found(_e):
+        return (
+            render_template(
+                "errors/404.html",
+                show_organiser_nav=_show_organiser_nav_for_template(),
+            ),
+            404,
+        )
+
+    @app.errorhandler(403)
+    def http_forbidden(_e):
+        return (
+            render_template(
+                "errors/403.html",
+                show_organiser_nav=_show_organiser_nav_for_template(),
+            ),
+            403,
+        )
 
     endpoints_requiring_session = frozenset(
         {
