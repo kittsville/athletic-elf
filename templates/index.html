@@ -40,7 +40,10 @@
         <strong>Your total points:</strong> {{ team_points }}
       </p>
       {% include "_activities_table.html" %}
-      <span class="muted">Activities must be uploaded before each week ends to be counted in hub/department totals. Only the top 80% of a hub/department's athletes are averaged for team scores.</span>
+      <p class="muted">
+        <strong>Note:</strong> Activities must be uploaded before each week ends to be counted in hub/department totals.
+        Only the top 80% of a hub/department's athletes are averaged for team scores.
+      </p>
     </section>
   {% else %}
     <p>You are not signed in.</p>
