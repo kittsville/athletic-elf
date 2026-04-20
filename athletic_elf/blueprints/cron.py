@@ -22,7 +22,13 @@ def cron_authorization_ok(expected: str, authorization: str | None) -> bool:
 
 
 def run_cron_maintenance(app) -> None:
-    """Session cleanup and activity enrichment; must run inside ``app.app_context()``."""
+    """
+    Session cleanup, activity enrichment, then period summarization.
+
+    Commits after cleanup and enrichment so Strava work is persisted even if
+    summarization fails later. A second commit persists summarization.
+    Must run inside ``app.app_context()``.
+    """
     with app.app_context():
         try:
             now = datetime.now(timezone.utc)
@@ -30,6 +36,7 @@ def run_cron_maintenance(app) -> None:
                 BrowserSession.expires_at < now
             ).delete(synchronize_session=False)
             n = process_activities(50)
+            db.session.commit()
             n_periods = summarize_due_periods_loop(app)
             db.session.commit()
             summary = (
