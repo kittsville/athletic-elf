@@ -243,8 +243,16 @@ def process_activities(limit=10):
         resp = http_client.get(
             f"{api_base}/activities/{activity.activity_id}",
             headers={"Authorization": f"Bearer {athlete.access_token}"},
+            timeout=10,
         )
-        resp.raise_for_status()
+        if not resp.ok:
+            current_app.logger.warning(
+                "Strava activity fetch failed: athlete_id=%s activity_id=%s http_status=%s",
+                activity.athlete_id,
+                activity.activity_id,
+                resp.status_code,
+            )
+            continue
         data = resp.json()
         print(f"distance: {data['distance']}")
         print(f"athlete id: {data['athlete']['id']}")
