@@ -214,7 +214,7 @@ class TestOrganiserWeeksPage(unittest.TestCase):
             db.session.commit()
             return raw
 
-    def test_organiser_weeks_requires_role(self):
+    def test_weeks_requires_role(self):
         with self.app.app_context():
             a = Athlete(
                 athlete_id=932_002,

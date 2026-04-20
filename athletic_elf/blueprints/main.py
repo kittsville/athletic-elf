@@ -202,7 +202,7 @@ def results():
 
 
 @bp.get("/organiser/weeks")
-def organiser_weeks():
+def weeks():
     athlete = g.current_athlete
     if not _can_perform_organiser_tasks(athlete):
         abort(403)
@@ -223,7 +223,7 @@ def organiser_weeks():
                 "computed_at": wk.summarized_at,
             }
         )
-    return render_template("organiser_weeks.html", sections=sections)
+    return render_template("weeks.html", sections=sections)
 
 
 @bp.get("/athletes")

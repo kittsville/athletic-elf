@@ -128,7 +128,7 @@ def create_app(config_class: type = Config) -> Flask:
             "main.athletes_resync_activities",
             "main.bonuses",
             "main.bonus_delete",
-            "main.organiser_weeks",
+            "main.weeks",
         }
     )
     endpoints_skip_session_lookup = frozenset(
