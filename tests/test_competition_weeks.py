@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from athletic_elf.competition_periods import (
     aggregates_frozen_team_scores,
     period_specs_for_config,
+    points_by_athlete_competition_totals,
     points_by_athlete_for_results_table,
     summarize_due_periods_loop,
 )
@@ -287,3 +288,47 @@ class TestResultsPointsWithWeeklyConfig(unittest.TestCase):
 
             pb = points_by_athlete_for_results_table(self.app)
             self.assertEqual(pb.get(933_000), 1)
+            comp = points_by_athlete_competition_totals(self.app)
+            self.assertEqual(comp.get(933_000), 1)
+
+
+class TestCompetitionTotalsAcrossWeeks(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(_CompetitionWeekConfig)
+        self.app.config["TESTING"] = True
+
+    def test_competition_totals_include_summarized_activities(self):
+        """Live results table excludes week_id rows; competition totals must not."""
+        with self.app.app_context():
+            db.session.add(
+                Athlete(
+                    athlete_id=934_000,
+                    firstname="S",
+                    lastname="um",
+                    access_token="at",
+                    refresh_token="rt",
+                    expires_at=2_000_000_000,
+                    hub="North Hub",
+                    department="Engineering",
+                )
+            )
+            db.session.add(
+                Activity(
+                    activity_id=843_000,
+                    athlete_id=934_000,
+                    sport_type="Ride",
+                    distance=5000.0,
+                    start_date=datetime(2026, 5, 5, tzinfo=timezone.utc),
+                    moving_time=1800,
+                )
+            )
+            db.session.commit()
+
+            summarize_due_periods_loop(
+                self.app, now=datetime(2026, 5, 11, tzinfo=timezone.utc)
+            )
+            db.session.commit()
+
+            self.assertEqual(points_by_athlete_for_results_table(self.app), {})
+            comp = points_by_athlete_competition_totals(self.app)
+            self.assertEqual(comp.get(934_000), 1)

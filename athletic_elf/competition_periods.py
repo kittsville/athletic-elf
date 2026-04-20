@@ -229,10 +229,25 @@ def activities_for_live_team_window(app) -> list[Activity]:
 def points_by_athlete_for_results_table(app) -> dict[int, int]:
     """
     Per-athlete points for the hub/department results tables: only the current
-    open scoring period (activities not yet attributed), plus frozen ``WeekScore`` rows
-    merged in at the route layer.
+    open scoring period (activities not yet attributed). Frozen ``WeekScore`` rows
+    are merged in at the route layer for hub/department totals.
     """
     acts = activities_for_live_team_window(app)
+    by_athlete: defaultdict[int, list[Activity]] = defaultdict(list)
+    for a in acts:
+        by_athlete[int(a.athlete_id)].append(a)
+    return {aid: activities_total_points(alist) for aid, alist in by_athlete.items()}
+
+
+def points_by_athlete_competition_totals(app) -> dict[int, int]:
+    """Per-athlete points over the full competition window (inclusive of summarized weeks)."""
+    start = app.config["COMPETITION_START_DATETIME"]
+    end_exclusive = app.config["COMPETITION_END_DATETIME"]
+    acts = Activity.query.filter(
+        Activity.start_date.isnot(None),
+        Activity.start_date >= start,
+        Activity.start_date < end_exclusive,
+    ).all()
     by_athlete: defaultdict[int, list[Activity]] = defaultdict(list)
     for a in acts:
         by_athlete[int(a.athlete_id)].append(a)

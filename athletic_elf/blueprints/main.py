@@ -20,6 +20,7 @@ from ..background import schedule_initial_activity_sync
 from ..competition_periods import (
     aggregates_frozen_team_scores,
     period_spec_for_index,
+    points_by_athlete_competition_totals,
     points_by_athlete_for_results_table,
 )
 from ..extensions import db
@@ -159,6 +160,11 @@ def results():
     athlete = g.current_athlete
     show_athlete_points = _can_perform_organiser_tasks(athlete)
     points_by = points_by_athlete_for_results_table(current_app)
+    athlete_points_for_table = (
+        points_by_athlete_competition_totals(current_app)
+        if show_athlete_points
+        else points_by
+    )
     hubs = current_app.config["HUB_OPTIONS"]
     departments = current_app.config["DEPARTMENT_OPTIONS"]
     hub_frozen, dept_frozen = aggregates_frozen_team_scores(
@@ -175,7 +181,7 @@ def results():
     department_summary.sort(key=lambda r: (-float(r["points"]), str(r["name"])))
     rows: list[dict[str, object]] = []
     if show_athlete_points:
-        for athlete_id, pts in points_by.items():
+        for athlete_id, pts in athlete_points_for_table.items():
             profile = Athlete.query.filter_by(athlete_id=athlete_id).first()
             if profile:
                 fn = profile.firstname or ""
