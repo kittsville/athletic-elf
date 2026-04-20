@@ -38,9 +38,9 @@
       </p>
       <p class="team-points">
         <strong>Your total points:</strong> {{ team_points }}
-        <span class="muted">(top 80% athletes averaged for hub/department scores)</span>
       </p>
       {% include "_activities_table.html" %}
+      <span class="muted">Activities must be uploaded before each week ends to be counted in hub/department totals. Only the top 80% of a hub/department's athletes are averaged for team scores.</span>
     </section>
   {% else %}
     <p>You are not signed in.</p>
