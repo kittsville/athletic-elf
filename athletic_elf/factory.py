@@ -9,9 +9,9 @@ from flask import Flask, Response, current_app, g, redirect, request, url_for
 from .competition_periods import period_specs_for_config
 from .config import (
     Config,
-    parse_activity_start_epoch,
     parse_app_developer_ids,
     parse_comma_options,
+    parse_competition_start_epoch,
     parse_datetime_utc,
     parse_week_boundary_datetimes,
 )
@@ -22,25 +22,25 @@ from .utils import athlete_role_label, format_moving_time
 
 def _require_competition_schedule(app: Flask) -> None:
     """Weekly hub/department scoring requires a valid competition window (see competition_periods)."""
-    start = app.config.get("ACTIVITY_START_DATETIME")
+    start = app.config.get("COMPETITION_START_DATETIME")
     boundaries = app.config.get("WEEK_BOUNDARY_DATETIMES") or ()
-    end = app.config.get("ACTIVITY_END_DATETIME")
+    end = app.config.get("COMPETITION_END_DATETIME")
     if start is None:
         raise ValueError(
-            "ACTIVITY_START_DATE must be set to a valid ISO 8601 datetime "
+            "COMPETITION_START_DATETIME must be set to a valid ISO 8601 datetime "
             "(competition start; used for Strava backfill and scoring periods)."
         )
     if end is None:
         raise ValueError(
-            "ACTIVITY_END_DATE must be set to a valid ISO 8601 datetime "
+            "COMPETITION_END_DATETIME must be set to a valid ISO 8601 datetime "
             "(competition end; final scoring period boundary and activity cutoff)."
         )
     specs = period_specs_for_config(start, boundaries, end)
     if not specs:
         raise ValueError(
             "Competition schedule must define at least one scoring period: "
-            "ensure ACTIVITY_END_DATE is after ACTIVITY_START_DATE, and that "
-            "WEEK_BOUNDARIES (comma-separated period ends) together with ACTIVITY_END_DATE "
+            "ensure COMPETITION_END_DATETIME is after COMPETITION_START_DATETIME, and that "
+            "WEEK_BOUNDARIES (comma-separated period ends) together with COMPETITION_END_DATETIME "
             "produce at least one period end strictly after the competition start."
         )
 
@@ -69,18 +69,16 @@ def create_app(config_class: type = Config) -> Flask:
         )
     app.config["SESSION_COOKIE_SECURE"] = bool(app.config.get("ENFORCE_HTTPS"))
     app.config["APP_DEVELOPER_IDS"] = parse_app_developer_ids()
-    app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_activity_start_epoch(
-        app.config.get("ACTIVITY_START_DATE")
-    )
-    app.config["ACTIVITY_START_DATETIME"] = parse_datetime_utc(
-        app.config.get("ACTIVITY_START_DATE")
-    )
+    start_raw = app.config.get("COMPETITION_START_DATETIME")
+    end_raw = app.config.get("COMPETITION_END_DATETIME")
+    start_str = start_raw.strip() if isinstance(start_raw, str) else None
+    end_str = end_raw.strip() if isinstance(end_raw, str) else None
+    app.config["ACTIVITY_FETCH_AFTER_EPOCH"] = parse_competition_start_epoch(start_str)
+    app.config["COMPETITION_START_DATETIME"] = parse_datetime_utc(start_str)
     app.config["WEEK_BOUNDARY_DATETIMES"] = parse_week_boundary_datetimes(
         app.config.get("WEEK_BOUNDARIES") or ""
     )
-    app.config["ACTIVITY_END_DATETIME"] = parse_datetime_utc(
-        app.config.get("ACTIVITY_END_DATE")
-    )
+    app.config["COMPETITION_END_DATETIME"] = parse_datetime_utc(end_str)
     _require_competition_schedule(app)
     # Allow tests (or custom Config subclasses) to pin options; otherwise env wins.
     if getattr(config_class, "HUB_OPTIONS", None) is None:

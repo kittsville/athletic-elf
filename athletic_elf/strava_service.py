@@ -40,7 +40,7 @@ def sync_activities_since_competition_start(athlete_id: int) -> int:
     after = cfg.get("ACTIVITY_FETCH_AFTER_EPOCH")
     if after is None:
         current_app.logger.info(
-            "ACTIVITY_START_DATE not set or invalid; skipping initial activity backfill "
+            "COMPETITION_START_DATETIME not set or invalid; skipping initial activity backfill "
             "for athlete_id=%s",
             athlete_id,
         )

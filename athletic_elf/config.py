@@ -57,7 +57,7 @@ def parse_datetime_utc(iso_value: str | None) -> datetime | None:
     return dt
 
 
-def parse_activity_start_epoch(iso_value: str | None) -> int | None:
+def parse_competition_start_epoch(iso_value: str | None) -> int | None:
     """
     Competition start instant as Unix epoch seconds for Strava's `after` query param.
 
@@ -68,7 +68,7 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
     if dt is None:
         if iso_value and str(iso_value).strip():
             _log.warning(
-                "Invalid ACTIVITY_START_DATE %r; skipping historical sync",
+                "Invalid COMPETITION_START_DATETIME %r; skipping historical sync",
                 iso_value,
             )
         return None
@@ -76,7 +76,7 @@ def parse_activity_start_epoch(iso_value: str | None) -> int | None:
 
 
 def parse_week_boundary_datetimes(raw: str | None) -> tuple[datetime, ...]:
-    """Comma-separated ISO timestamps (same rules as ACTIVITY_START_DATE), sorted unique."""
+    """Comma-separated ISO timestamps (same rules as COMPETITION_START_DATETIME), sorted unique."""
     if not raw or not str(raw).strip():
         return ()
     out: list[datetime] = []
@@ -161,13 +161,19 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
 
     # Required at app startup (validated in create_app): ISO 8601 competition start; Strava
-    # backfill uses this as `after` epoch.
-    ACTIVITY_START_DATE = os.environ.get("ACTIVITY_START_DATE", "").strip() or None
+    # backfill uses this as `after` epoch. create_app replaces this string with an aware UTC
+    # datetime on the same config key.
+    COMPETITION_START_DATETIME = (
+        os.environ.get("COMPETITION_START_DATETIME", "").strip() or None
+    )
     # Comma-separated ISO instants: end of each scoring period (exclusive upper bound on
-    # activity start_date). Merged with ACTIVITY_END_DATE. May be empty if only one period
-    # from ACTIVITY_START_DATE to ACTIVITY_END_DATE is needed.
+    # activity start_date). Merged with COMPETITION_END_DATETIME. May be empty if only one
+    # period from COMPETITION_START_DATETIME to COMPETITION_END_DATETIME is needed.
     WEEK_BOUNDARIES = os.environ.get("WEEK_BOUNDARIES", "").strip() or None
-    # Required at app startup: final period boundary; activities starting after this are excluded.
-    ACTIVITY_END_DATE = os.environ.get("ACTIVITY_END_DATE", "").strip() or None
+    # Required at app startup: final period boundary; activities starting after this are
+    # excluded. create_app replaces this string with an aware UTC datetime on the same key.
+    COMPETITION_END_DATETIME = (
+        os.environ.get("COMPETITION_END_DATETIME", "").strip() or None
+    )
     # Strava allows up to 200 per page for GET /athlete/activities.
     STRAVA_ACTIVITIES_PAGE_SIZE = 200

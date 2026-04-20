@@ -28,9 +28,9 @@ from ..models import Activity, Athlete, Bonus, BrowserSession, Week, WeekScore
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..team_scoring import summaries_by_hub_and_department
 from ..utils import (
-    activity_start_date_for_display,
     athlete_display_name,
     athlete_hub_department_complete,
+    competition_start_for_display,
 )
 
 bp = Blueprint("main", __name__)
@@ -93,8 +93,8 @@ def index():
         is_active=bool(athlete.is_active),
         activities=activities,
         team_points=team_points,
-        activity_start_display=activity_start_date_for_display(
-            current_app.config.get("ACTIVITY_START_DATE")
+        activity_start_display=competition_start_for_display(
+            current_app.config.get("COMPETITION_START_DATETIME")
         ),
     )
 
@@ -290,8 +290,8 @@ def athlete_activities(athlete_id: int):
         viewed_name=viewed_name,
         activities=activities,
         team_points=team_points_val,
-        activity_start_display=activity_start_date_for_display(
-            current_app.config.get("ACTIVITY_START_DATE")
+        activity_start_display=competition_start_for_display(
+            current_app.config.get("COMPETITION_START_DATETIME")
         ),
     )
 

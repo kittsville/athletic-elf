@@ -19,9 +19,9 @@ class _CronDisabledConfig(Config):
     AUTO_CREATE_TABLES = True
     HUB_OPTIONS = ("North Hub",)
     DEPARTMENT_OPTIONS = ("Engineering",)
-    ACTIVITY_START_DATE = "2020-01-01T00:00:00+00:00"
+    COMPETITION_START_DATETIME = "2020-01-01T00:00:00+00:00"
     WEEK_BOUNDARIES = ""
-    ACTIVITY_END_DATE = "2030-01-01T00:00:00+00:00"
+    COMPETITION_END_DATETIME = "2030-01-01T00:00:00+00:00"
 
 
 class _ImmediateThread(threading.Thread):

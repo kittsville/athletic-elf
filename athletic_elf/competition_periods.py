@@ -25,33 +25,35 @@ class PeriodSpec:
 
 
 def normalized_period_endpoints(
-    activity_start: datetime,
+    competition_start: datetime,
     boundary_datetimes: tuple[datetime, ...],
-    activity_end: datetime,
+    competition_end: datetime,
 ) -> tuple[datetime, ...]:
-    """Sorted period end instants strictly after ``activity_start``."""
+    """Sorted period end instants strictly after ``competition_start``."""
     ends = sorted(boundary_datetimes)
-    ends = sorted(frozenset(ends) | {activity_end})
-    return tuple(e for e in ends if e > activity_start)
+    ends = sorted(frozenset(ends) | {competition_end})
+    return tuple(e for e in ends if e > competition_start)
 
 
 def period_specs_for_config(
-    activity_start: datetime,
+    competition_start: datetime,
     boundary_datetimes: tuple[datetime, ...],
-    activity_end: datetime,
+    competition_end: datetime,
 ) -> list[PeriodSpec]:
-    ends = normalized_period_endpoints(activity_start, boundary_datetimes, activity_end)
+    ends = normalized_period_endpoints(
+        competition_start, boundary_datetimes, competition_end
+    )
     if not ends:
         return []
     specs: list[PeriodSpec] = []
     for idx, end_exclusive in enumerate(ends):
         if idx == 0:
-            eligible_lower = activity_start
-            canonical_start = activity_start
+            eligible_lower = competition_start
+            canonical_start = competition_start
         else:
             prev_boundary = ends[idx - 1]
             eligible_lower = max(
-                activity_start, prev_boundary - GRACE_AFTER_PREVIOUS_BOUNDARY
+                competition_start, prev_boundary - GRACE_AFTER_PREVIOUS_BOUNDARY
             )
             canonical_start = prev_boundary
         specs.append(
@@ -67,9 +69,9 @@ def period_specs_for_config(
 
 def _period_specs(app) -> list[PeriodSpec]:
     return period_specs_for_config(
-        app.config["ACTIVITY_START_DATETIME"],
+        app.config["COMPETITION_START_DATETIME"],
         app.config.get("WEEK_BOUNDARY_DATETIMES") or (),
-        app.config["ACTIVITY_END_DATETIME"],
+        app.config["COMPETITION_END_DATETIME"],
     )
 
 

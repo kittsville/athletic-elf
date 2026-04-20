@@ -19,9 +19,9 @@ from tests.test_hub_department import _TestHubDeptConfig
 
 
 class _CompetitionWeekConfig(_TestHubDeptConfig):
-    ACTIVITY_START_DATE = "2026-05-01T00:00:00+00:00"
+    COMPETITION_START_DATETIME = "2026-05-01T00:00:00+00:00"
     WEEK_BOUNDARIES = "2026-05-10T00:00:00+00:00,2026-05-20T00:00:00+00:00"
-    ACTIVITY_END_DATE = "2026-05-31T00:00:00+00:00"
+    COMPETITION_END_DATETIME = "2026-05-31T00:00:00+00:00"
 
 
 class TestFactoryRequiresCompetitionSchedule(unittest.TestCase):
@@ -30,13 +30,13 @@ class TestFactoryRequiresCompetitionSchedule(unittest.TestCase):
             SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
             SECRET_KEY = "test-secret-key-factory-competition-xx"
             VERIFY_TOKEN = "verify"
-            ACTIVITY_START_DATE = "2020-01-01T00:00:00+00:00"
+            COMPETITION_START_DATETIME = "2020-01-01T00:00:00+00:00"
             WEEK_BOUNDARIES = ""
-            ACTIVITY_END_DATE = None
+            COMPETITION_END_DATETIME = None
 
         with self.assertRaises(ValueError) as ctx:
             create_app(_NoEnd)
-        self.assertIn("ACTIVITY_END_DATE", str(ctx.exception))
+        self.assertIn("COMPETITION_END_DATETIME", str(ctx.exception))
 
 
 class TestParseWeekBoundaries(unittest.TestCase):
