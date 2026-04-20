@@ -22,21 +22,27 @@
   <section class="period" aria-labelledby="week-heading-{{ wk.id }}">
     <h2 id="week-heading-{{ wk.id }}">Period {{ wk.period_index }}</h2>
     {% if block.spec %}
-    <p class="meta">Canonical window {{ block.spec.canonical_start }} &ndash; {{ block.spec.end_exclusive }} (end exclusive). Summarised at {{ block.computed_at }}.</p>
+    <p class="meta">Canonical window {{ block.spec.canonical_start|utc_time("%d %B %Y, %H:%M") }} &ndash; {{ block.spec.end_exclusive|utc_time("%d %B %Y, %H:%M") }} (end exclusive). Summarised at {{ block.computed_at|utc_time("%d %B %Y, %H:%M") }}.</p>
     {% else %}
-    <p class="meta">Summarised at {{ block.computed_at }}. (Period index is not in the current config window list.)</p>
+    <p class="meta">Summarised at {{ block.computed_at|utc_time("%d %B %Y, %H:%M") }}. (Period index is not in the current config window list.)</p>
     {% endif %}
     <table>
       <thead>
-        <tr><th>Scope</th><th>Target</th><th>Points</th><th>Row created</th></tr>
+        <tr><th>Team</th><th>Points</th></tr>
       </thead>
       <tbody>
         {% for s in block.scores %}
         <tr>
-          <td>{{ s.team_scope }}</td>
-          <td>{{ s.target }}</td>
+          <td>
+            {% if s.team_scope == 'hub' %}
+              {{ s.target }} (Hub)
+            {% elif s.team_scope == 'department' %}
+              {{ s.target }} (Department)
+            {% else %}
+              {{ s.target }} ({{ s.team_scope }})
+            {% endif %}
+          </td>
           <td>{{ "%.2f"|format(s.points) }}</td>
-          <td>{{ s.created_at }}</td>
         </tr>
         {% endfor %}
       </tbody>
