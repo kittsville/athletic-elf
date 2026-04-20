@@ -239,7 +239,7 @@ class TestOrganiserWeeksPage(unittest.TestCase):
         self._login(self._make_organiser())
         rv = self.client.get("/organiser/weeks")
         self.assertEqual(rv.status_code, 200)
-        self.assertIn(b"Computed competition periods", rv.data)
+        self.assertIn(b"Weekly Scores", rv.data)
 
 
 class TestResultsPointsWithWeeklyConfig(unittest.TestCase):
