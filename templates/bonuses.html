@@ -35,7 +35,7 @@
     <tbody>
     {% for row in rows %}
       <tr>
-        <td>{{ row.created_at.strftime("%Y-%m-%d %H:%M") }} UTC</td>
+        <td>{{ row.created_at|utc_time }}</td>
         <td>{{ row.name }}</td>
         <td>{{ row.points }}</td>
         <td>{{ row.target }}</td>

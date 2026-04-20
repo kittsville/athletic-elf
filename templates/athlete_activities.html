@@ -14,9 +14,10 @@
   <section class="activities-section">
     <h2>Activities</h2>
     <p class="muted activities-intro">
-      {% if activity_start_display %}
+      {% set competition_start = config.get("COMPETITION_START_DATETIME") %}
+      {% if competition_start %}
         All activities listed below are on or after the competition start
-        (<strong>{{ activity_start_display }}</strong>)
+        (<strong>{{ competition_start|utc_time("%d %B %Y, %H:%M") }}</strong>)
       {% else %}
         All activities listed below are from the competition start onward.
       {% endif %}

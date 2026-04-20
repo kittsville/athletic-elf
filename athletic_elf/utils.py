@@ -72,17 +72,3 @@ def parse_strava_datetime(iso: str) -> datetime:
     if dt.tzinfo is not None:
         dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
     return dt
-
-
-def competition_start_for_display(
-    competition_start: datetime | None,
-) -> str | None:
-    """Competition start as shown on the home page; None if unset."""
-    if competition_start is None:
-        return None
-    dt = competition_start
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt.strftime("%d %B %Y, %H:%M UTC")

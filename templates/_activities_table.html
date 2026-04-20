@@ -14,7 +14,7 @@
         <tr>
           <td>
             {% if a.start_date %}
-              {{ a.start_date.strftime("%Y-%m-%d %H:%M") }} UTC
+              {{ a.start_date|utc_time }}
             {% else %}
               <span class="muted">Pending sync</span>
             {% endif %}
