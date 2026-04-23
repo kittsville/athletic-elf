@@ -7,6 +7,7 @@
     <h2 id="heading-{{ section.slug }}">{{ section.title }}</h2>
     <p class="desc">{{ section.description }}</p>
     {% if section.rows %}
+    <div class="table-scroll">
     <table class="table-bordered">
       <thead>
         <tr>
@@ -32,6 +33,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
     {% else %}
     <p class="leaders-empty">No contributions in this category yet.</p>
     {% endif %}

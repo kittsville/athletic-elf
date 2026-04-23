@@ -4,6 +4,7 @@
   <section class="summary" aria-labelledby="hub-heading">
     <h2 id="hub-heading">Points by hub</h2>
     <p class="results-table-note">Team score is the average of the top 80% of this hub&rsquo;s athletes (by individual points), plus any bonus points for that hub; hubs with fewer than five athletes score 0 from activities.</p>
+    <div class="table-scroll">
     <table class="table-bordered">
       <thead><tr><th>Hub</th><th>Athletes</th><th>Points</th></tr></thead>
       <tbody>
@@ -16,10 +17,12 @@
       {% endfor %}
       </tbody>
     </table>
+    </div>
   </section>
   <section class="summary" aria-labelledby="dept-heading">
     <h2 id="dept-heading">Points by department</h2>
     <p class="results-table-note">Team score is the average of the top 80% of this department&rsquo;s athletes (by individual points), plus any bonus points for that department; departments with fewer than five athletes score 0 from activities.</p>
+    <div class="table-scroll">
     <table class="table-bordered">
       <thead><tr><th>Department</th><th>Athletes</th><th>Points</th></tr></thead>
       <tbody>
@@ -32,10 +35,12 @@
       {% endfor %}
       </tbody>
     </table>
+    </div>
   </section>
   {% if show_athlete_points %}
   <section class="summary" aria-labelledby="athlete-heading">
     <h2 id="athlete-heading">Points by athlete</h2>
+    <div class="table-scroll">
     <table class="table-bordered">
       <thead><tr><th>First name</th><th>Last name</th><th>Athlete ID</th><th>Points</th></tr></thead>
       <tbody>
@@ -49,6 +54,7 @@
       {% endfor %}
       </tbody>
     </table>
+    </div>
     <p class="results-note">Per-athlete scores are only visible to organisers and app developers; other signed-in users see hub and department totals only.</p>
   </section>
   {% endif %}

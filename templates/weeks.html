@@ -15,6 +15,7 @@
     {% else %}
     <p class="meta">Summarised at {{ block.computed_at|utc_time("%d %B %Y, %H:%M") }}. (Period index is not in the current config window list.)</p>
     {% endif %}
+    <div class="table-scroll">
     <table class="table-bordered">
       <thead>
         <tr><th>Team</th><th>Points</th></tr>
@@ -36,6 +37,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </section>
   {% endfor %}
 {% endblock %}

@@ -1,4 +1,5 @@
 {% if activities %}
+  <div class="table-scroll">
   <table class="activities">
     <thead>
       <tr>
@@ -35,6 +36,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 {% else %}
   <p class="muted">No activities stored yet. New Strava activities will appear after webhooks and background processing.</p>
 {% endif %}
