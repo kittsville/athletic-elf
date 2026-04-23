@@ -218,6 +218,7 @@ def build_asgi_app(flask_app: Flask) -> Starlette:
     mcp_route = starlette_app.router.routes[0]
     mcp_route.app = CORSMiddleware(
         AuthMiddleware(mcp_route.app, flask_app),
+        allow_origins=["https://olympics.sci1.uk"],
         allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
         allow_methods=["*"],
         allow_headers=["*"],

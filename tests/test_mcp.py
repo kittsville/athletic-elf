@@ -383,6 +383,21 @@ class TestAsgiCors(unittest.TestCase):
             r.headers.get("access-control-allow-origin"), "http://127.0.0.1:9999"
         )
 
+    def test_preflight_from_olympics_sci1_uk_allowed(self):
+        with TestClient(self.asgi) as c:
+            r = c.options(
+                "/mcp",
+                headers={
+                    "Origin": "https://olympics.sci1.uk",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "authorization,content-type",
+                },
+            )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.headers.get("access-control-allow-origin"), "https://olympics.sci1.uk"
+        )
+
     def test_preflight_from_external_origin_denied(self):
         with TestClient(self.asgi) as c:
             r = c.options(
