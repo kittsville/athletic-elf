@@ -4,16 +4,21 @@ import asyncio
 import unittest
 from datetime import datetime
 
+from starlette.testclient import TestClient
+
 from athletic_elf.config import Config
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
 from athletic_elf.mcp_app import (
     AuthMiddleware,
     _current_athlete,
+    build_asgi_app,
     build_mcp,
+    tool_get_competition_schedule,
     tool_get_my_points_breakdown,
     tool_get_my_profile,
     tool_get_my_recent_activities,
+    tool_get_scoring_rules,
 )
 from athletic_elf.models import Activity, Athlete
 from athletic_elf.session import hash_session_token
@@ -87,6 +92,12 @@ class TestAuthMiddleware(unittest.TestCase):
             _invoke(self.mw, [(b"authorization", b"Bearer nonexistent-token")])
         )
         self.assertEqual(sent[0]["status"], 401)
+        self.assertFalse(self.inner.called)
+
+    def test_rejects_empty_bearer(self):
+        sent = asyncio.run(_invoke(self.mw, [(b"authorization", b"Bearer   ")]))
+        self.assertEqual(sent[0]["status"], 401)
+        self.assertEqual(sent[1]["body"], b"empty bearer token")
         self.assertFalse(self.inner.called)
 
     def test_accepts_valid_token_and_sets_current_athlete(self):
@@ -201,6 +212,108 @@ class TestMcpTools(unittest.TestCase):
         self.assertAlmostEqual(out["disciplines"]["cycle_km"], 10.0)
         self.assertAlmostEqual(out["disciplines"]["run_km"], 1.6)
 
+    def test_recent_activities_excludes_other_athletes(self):
+        # Another athlete with a huge ride should never surface for athlete 777.
+        with self.app.app_context():
+            db.session.add(
+                Athlete(
+                    athlete_id=555,
+                    firstname="Other",
+                    lastname="Person",
+                    access_token="at",
+                    refresh_token="rt",
+                    expires_at=9_999_999_999,
+                )
+            )
+            db.session.add(
+                Activity(
+                    activity_id=9999,
+                    athlete_id=555,
+                    distance=50000.0,
+                    sport_type="Ride",
+                    moving_time=7200,
+                    start_date=datetime(2026, 4, 3, 9, 0, 0),
+                )
+            )
+            db.session.commit()
+        out = self._with_athlete(tool_get_my_recent_activities, limit=100)
+        self.assertNotIn(9999, [r["activity_id"] for r in out])
+        self.assertEqual(len(out), 2)
+
+    def test_points_breakdown_excludes_other_athletes(self):
+        with self.app.app_context():
+            db.session.add(
+                Athlete(
+                    athlete_id=556,
+                    firstname="Stranger",
+                    lastname="X",
+                    access_token="at",
+                    refresh_token="rt",
+                    expires_at=9_999_999_999,
+                )
+            )
+            db.session.add(
+                Activity(
+                    activity_id=9998,
+                    athlete_id=556,
+                    distance=100000.0,  # would be 20 cycling points if leaked
+                    sport_type="Ride",
+                    moving_time=3600,
+                    start_date=datetime(2026, 4, 4, 9, 0, 0),
+                )
+            )
+            db.session.commit()
+        out = self._with_athlete(tool_get_my_points_breakdown)
+        # Unchanged from test_points_breakdown: 3 points, 2 activities.
+        self.assertEqual(out["total_points"], 3)
+        self.assertEqual(out["activity_count"], 2)
+
+    def test_recent_activities_limit_clamped_to_100(self):
+        # Insert 150 activities; expect at most 100 back even when limit=1000.
+        with self.app.app_context():
+            for i in range(150):
+                db.session.add(
+                    Activity(
+                        activity_id=20000 + i,
+                        athlete_id=777,
+                        distance=1000.0,
+                        sport_type="Run",
+                        moving_time=300,
+                        start_date=datetime(2025, 1, 1, 0, i % 60, 0),
+                    )
+                )
+            db.session.commit()
+        out = self._with_athlete(tool_get_my_recent_activities, limit=1000)
+        self.assertEqual(len(out), 100)
+
+    def test_recent_activities_excludes_unscored_stubs(self):
+        # Webhook-created stubs (start_date IS NULL) must not surface.
+        with self.app.app_context():
+            db.session.add(Activity(activity_id=30001, athlete_id=777, start_date=None))
+            db.session.commit()
+        out = self._with_athlete(tool_get_my_recent_activities, limit=10)
+        self.assertNotIn(30001, [r["activity_id"] for r in out])
+
+    def test_competition_schedule(self):
+        out = self._with_athlete(tool_get_competition_schedule)
+        self.assertEqual(out["competition_start"], "2020-01-01T00:00:00+00:00")
+        self.assertEqual(out["competition_end"], "2030-01-01T00:00:00+00:00")
+        self.assertEqual(out["period_count"], 1)
+        # Test config has a 10-year window starting 2020; current period is open.
+        self.assertIsNotNone(out["current_period"])
+        self.assertEqual(out["current_period"]["index"], 0)
+        self.assertGreater(out["current_period"]["seconds_remaining"], 0)
+
+    def test_scoring_rules(self):
+        # No athlete context needed — purely static.
+        out = tool_get_scoring_rules()
+        self.assertEqual(out["cycling_km_per_point"], 5.0)
+        self.assertEqual(out["easy_fitness_daily_cap_points"], 5)
+        self.assertEqual(out["team_min_size_for_score"], 5)
+        slugs = {lb["slug"] for lb in out["leaderboards"]}
+        self.assertIn("mvp", slugs)
+        self.assertIn("marathoner", slugs)
+
 
 class TestBuildMcp(unittest.TestCase):
     def test_tools_registered(self):
@@ -216,3 +329,117 @@ class TestBuildMcp(unittest.TestCase):
                 "get_scoring_rules",
             },
         )
+
+
+class TestAsgiCors(unittest.TestCase):
+    """End-to-end CORS + auth wiring on the combined ASGI app."""
+
+    def setUp(self):
+        self.flask_app = create_app(_TestMcpConfig)
+        self.flask_app.config["TESTING"] = True
+        self.raw = "cors-test-mcp-key"
+        with self.flask_app.app_context():
+            db.session.add(
+                Athlete(
+                    athlete_id=321,
+                    firstname="Cors",
+                    lastname="Tester",
+                    access_token="at",
+                    refresh_token="rt",
+                    expires_at=9_999_999_999,
+                    mcp_key=hash_session_token(self.raw),
+                )
+            )
+            db.session.commit()
+        self.asgi = build_asgi_app(self.flask_app)
+
+    def test_preflight_from_localhost_allowed(self):
+        with TestClient(self.asgi) as c:
+            r = c.options(
+                "/mcp",
+                headers={
+                    "Origin": "http://localhost:6274",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "authorization,content-type",
+                },
+            )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.headers.get("access-control-allow-origin"), "http://localhost:6274"
+        )
+
+    def test_preflight_from_127_0_0_1_allowed(self):
+        with TestClient(self.asgi) as c:
+            r = c.options(
+                "/mcp",
+                headers={
+                    "Origin": "http://127.0.0.1:9999",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "authorization",
+                },
+            )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.headers.get("access-control-allow-origin"), "http://127.0.0.1:9999"
+        )
+
+    def test_preflight_from_external_origin_denied(self):
+        with TestClient(self.asgi) as c:
+            r = c.options(
+                "/mcp",
+                headers={
+                    "Origin": "https://evil.example.com",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "authorization",
+                },
+            )
+        self.assertIsNone(r.headers.get("access-control-allow-origin"))
+
+    def test_401_carries_cors_header_for_localhost(self):
+        # Without CORS wrapping auth, browsers can't read the 401 body.
+        with TestClient(self.asgi) as c:
+            r = c.post(
+                "/mcp",
+                json={"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
+                headers={
+                    "Origin": "http://localhost:6274",
+                    "Accept": "application/json, text/event-stream",
+                },
+            )
+        self.assertEqual(r.status_code, 401)
+        self.assertEqual(
+            r.headers.get("access-control-allow-origin"), "http://localhost:6274"
+        )
+
+    def test_authed_post_goes_through_and_carries_cors_header(self):
+        with TestClient(self.asgi) as c:
+            r = c.post(
+                "/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2025-06-18",
+                        "capabilities": {},
+                        "clientInfo": {"name": "test", "version": "0"},
+                    },
+                },
+                headers={
+                    "Origin": "http://localhost:6274",
+                    "Accept": "application/json, text/event-stream",
+                    "Authorization": f"Bearer {self.raw}",
+                },
+            )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(
+            r.headers.get("access-control-allow-origin"), "http://localhost:6274"
+        )
+        self.assertEqual(r.json()["result"]["serverInfo"]["name"], "athletic-elf-coach")
+
+    def test_flask_catchall_unaffected_by_mcp_cors(self):
+        with TestClient(self.asgi) as c:
+            r = c.get("/")
+        self.assertEqual(r.status_code, 200)
+        # Flask path should not get CORS headers — only /mcp does.
+        self.assertIsNone(r.headers.get("access-control-allow-origin"))

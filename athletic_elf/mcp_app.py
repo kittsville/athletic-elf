@@ -9,9 +9,13 @@ is set by `AuthMiddleware` after it validates the bearer token against
 import contextvars
 from datetime import datetime, timezone
 
+from asgiref.wsgi import WsgiToAsgi
 from flask import Flask
 from mcp.server.fastmcp import FastMCP
 from points import activities_total_points, discipline_totals_for_activities
+from starlette.applications import Starlette
+from starlette.middleware.cors import CORSMiddleware
+from starlette.routing import Mount
 
 from .competition_periods import period_specs_for_config
 from .leaderboard import LEADERBOARD_SPECS
@@ -192,6 +196,28 @@ class AuthMiddleware:
                 await self.asgi_app(scope, receive, send)
             finally:
                 _current_athlete.reset(token)
+
+
+def build_asgi_app(flask_app: Flask) -> Starlette:
+    """Combined ASGI app: FastMCP Streamable HTTP at /mcp, Flask WSGI at everything else.
+
+    CORS wraps auth (so preflight and 401 responses carry allow-origin headers for
+    localhost tools), auth wraps the MCP handler (so tool calls see the current athlete).
+    """
+    mcp = build_mcp()
+    starlette_app = mcp.streamable_http_app()
+
+    mcp_route = starlette_app.router.routes[0]
+    mcp_route.app = CORSMiddleware(
+        AuthMiddleware(mcp_route.app, flask_app),
+        allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["mcp-session-id"],
+    )
+
+    starlette_app.router.routes.append(Mount("/", app=WsgiToAsgi(flask_app)))
+    return starlette_app
 
 
 async def _reject(send, status: int, detail: str) -> None:
