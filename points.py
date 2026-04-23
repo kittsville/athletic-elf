@@ -44,9 +44,15 @@ _SCORE_EASY_FITNESS = frozenset(
 # Yoga for leaderboards (not full easy-fitness set); "stretching" in copy is informal.
 _SCORE_ZEN_MASTER = frozenset({"Yoga"})
 
-_EASY_FITNESS_DAILY_CAP = 5
-_SECONDS_PER_EASY_POINT = 30 * 60
-_SECONDS_PER_HARD_POINT = 15 * 60
+CYCLING_METERS_PER_POINT = 5000
+RUNNING_METERS_PER_POINT = 1600
+WALKING_METERS_PER_POINT = 2000
+SWIMMING_METERS_PER_POINT = 400
+SECONDS_PER_HARD_FITNESS_POINT = 15 * 60
+SECONDS_PER_EASY_FITNESS_POINT = 30 * 60
+EASY_FITNESS_DAILY_CAP_POINTS = 5
+TEAM_MIN_SIZE_FOR_SCORE = 5
+TEAM_TOP_FRACTION = 0.8
 
 
 def activities_total_points(activities):
@@ -98,14 +104,17 @@ def activities_total_points(activities):
             sum_hard_time += mt
 
     total = 0
-    total += int(sum_cycling // 5000)
-    total += int(sum_running // 1600)
-    total += int(sum_walking // 2000)
-    total += int(sum_swim // 400)
-    total += sum_hard_time // _SECONDS_PER_HARD_POINT
+    total += int(sum_cycling // CYCLING_METERS_PER_POINT)
+    total += int(sum_running // RUNNING_METERS_PER_POINT)
+    total += int(sum_walking // WALKING_METERS_PER_POINT)
+    total += int(sum_swim // SWIMMING_METERS_PER_POINT)
+    total += sum_hard_time // SECONDS_PER_HARD_FITNESS_POINT
 
     for _day, mt_day in easy_time_by_day.items():
-        total += min(mt_day // _SECONDS_PER_EASY_POINT, _EASY_FITNESS_DAILY_CAP)
+        total += min(
+            mt_day // SECONDS_PER_EASY_FITNESS_POINT,
+            EASY_FITNESS_DAILY_CAP_POINTS,
+        )
 
     return total
 
@@ -164,9 +173,9 @@ def team_points(per_athlete_points: list[int]) -> float:
     whole number at least 80% of the team (e.g. 5 athletes → top 4 averaged).
     """
     n = len(per_athlete_points)
-    if n < 5:
+    if n < TEAM_MIN_SIZE_FOR_SCORE:
         return 0.0
-    k = math.ceil(0.8 * n)
+    k = math.ceil(TEAM_TOP_FRACTION * n)
     ordered = sorted(per_athlete_points, reverse=True)
     top = ordered[:k]
     return sum(top) / k

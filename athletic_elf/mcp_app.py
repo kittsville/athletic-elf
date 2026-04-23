@@ -12,7 +12,19 @@ from datetime import datetime, timezone
 from asgiref.wsgi import WsgiToAsgi
 from flask import Flask
 from mcp.server.fastmcp import FastMCP
-from points import activities_total_points, discipline_totals_for_activities
+from points import (
+    CYCLING_METERS_PER_POINT,
+    EASY_FITNESS_DAILY_CAP_POINTS,
+    RUNNING_METERS_PER_POINT,
+    SECONDS_PER_EASY_FITNESS_POINT,
+    SECONDS_PER_HARD_FITNESS_POINT,
+    SWIMMING_METERS_PER_POINT,
+    TEAM_MIN_SIZE_FOR_SCORE,
+    TEAM_TOP_FRACTION,
+    WALKING_METERS_PER_POINT,
+    activities_total_points,
+    discipline_totals_for_activities,
+)
 from starlette.applications import Starlette
 from starlette.middleware.cors import CORSMiddleware
 from starlette.routing import Mount
@@ -26,18 +38,6 @@ from .utils import athlete_display_name
 _current_athlete: contextvars.ContextVar[Athlete] = contextvars.ContextVar(
     "mcp_current_athlete"
 )
-
-SCORING_RULES = {
-    "cycling_km_per_point": 5.0,
-    "running_km_per_point": 1.6,
-    "walking_km_per_point": 2.0,
-    "swimming_m_per_point": 400,
-    "hard_fitness_minutes_per_point": 15,
-    "easy_fitness_minutes_per_point": 30,
-    "easy_fitness_daily_cap_points": 5,
-    "team_min_size_for_score": 5,
-    "team_top_fraction": 0.8,
-}
 
 
 def _athlete_activities_with_start_date() -> list[Activity]:
@@ -131,7 +131,15 @@ def tool_get_competition_schedule() -> dict:
 def tool_get_scoring_rules() -> dict:
     """Scoring thresholds the app uses (distance/time → points, daily caps, team formula)."""
     return {
-        **SCORING_RULES,
+        "cycling_km_per_point": CYCLING_METERS_PER_POINT / 1000,
+        "running_km_per_point": RUNNING_METERS_PER_POINT / 1000,
+        "walking_km_per_point": WALKING_METERS_PER_POINT / 1000,
+        "swimming_m_per_point": SWIMMING_METERS_PER_POINT,
+        "hard_fitness_minutes_per_point": SECONDS_PER_HARD_FITNESS_POINT // 60,
+        "easy_fitness_minutes_per_point": SECONDS_PER_EASY_FITNESS_POINT // 60,
+        "easy_fitness_daily_cap_points": EASY_FITNESS_DAILY_CAP_POINTS,
+        "team_min_size_for_score": TEAM_MIN_SIZE_FOR_SCORE,
+        "team_top_fraction": TEAM_TOP_FRACTION,
         "leaderboards": [
             {"slug": slug, "title": title, "stat_header": stat_header}
             for slug, title, _desc, stat_header, _sort in LEADERBOARD_SPECS
