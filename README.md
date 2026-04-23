@@ -53,7 +53,9 @@ pip3 install -r requirements-dev.txt
 
 ### Environment variables
 
-Copy `.env.example` to `.env`. We'll set up some of the values before starting the app. An explanation of their purpose:
+Copy `.env.example` to `.env`. Install [direnv](https://direnv.net/) to avoid having to `source .env` every time you open a new shell.
+
+Set up some of the values before starting the app. An explanation of their purpose:
 
 | Variable             | Required | Default                                              | Description |
 |----------------------|----------|------------------------------------------------------|-------------|
