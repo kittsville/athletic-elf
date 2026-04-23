@@ -3,3 +3,7 @@ flask-sqlalchemy==3.1.1
 psycopg2-binary==2.9.11
 requests==2.33.0
 gunicorn==25.3.0
+mcp==1.18.0
+uvicorn[standard]==0.38.0
+asgiref==3.10.0
+starlette==0.51.0

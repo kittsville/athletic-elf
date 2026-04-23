@@ -30,6 +30,10 @@ Postgres comes from `docker-compose.yml` (`docker compose up -d`). Strava needs 
 
 ## Architecture
 
+### Entry points
+- `asgi:app` — combined ASGI app (Flask WSGI + FastMCP Streamable HTTP). Used by `Procfile` (`gunicorn -k uvicorn.workers.UvicornWorker asgi:app`) and by `python app.py` (boots uvicorn on `PORT`).
+- `app:app` — the bare Flask WSGI app. Used by `flask --app app init-db` release job.
+
 ### Flask application factory (`athletic_elf/factory.py`)
 `create_app` validates config strictly at startup (VERIFY_TOKEN non-empty; competition schedule produces ≥1 scoring period), mutates config keys in place (e.g. `COMPETITION_START_DATETIME` string → aware UTC `datetime`), and registers four blueprints: `main`, `cron`, `oauth`, `webhook`. Two `before_request` hooks do (a) HTTPS enforcement when `ENFORCE_HTTPS` (trusts `X-Forwarded-Proto`) and (b) browser-session lookup that populates `g.current_athlete` and redirects to `/` for endpoints in `endpoints_requiring_session`. Webhook and cron endpoints are listed in `endpoints_skip_session_lookup` so they never trigger session DB reads. A Flask CLI command `flask --app app init-db` creates tables (Procfile `release`), since `AUTO_CREATE_TABLES` defaults to `False` in production to avoid multiple workers racing on DDL.
 
@@ -40,6 +44,11 @@ Postgres comes from `docker-compose.yml` (`docker compose up -d`). Strava needs 
 
 ### Scoring (`points.py` — top-level module, not inside the package)
 `points.py` imports as `from points import activities_total_points, team_points, discipline_totals_for_activities`. Scoring rules (thresholds, daily easy-fitness cap of 5, per-sport type sets) live there; don't duplicate them. `team_points(per_athlete_points)` computes a hub/department's score as the mean of the top `ceil(0.8 * n)` scorers (0 if fewer than 5 active members).
+
+### MCP server (`athletic_elf/mcp_app.py`, mounted in `asgi.py`)
+Read-only, athlete-scoped tools served over Streamable HTTP at `POST /mcp` (stateless, `json_response=True`). Auth is `Authorization: Bearer <key>` where `sha256(key).hexdigest() == Athlete.mcp_key`; athletes mint/rotate via `/settings`. Tools read the current athlete from a `ContextVar` (`_current_athlete`) that `AuthMiddleware` sets after login — **never** take an `athlete_id` tool parameter; that would let one athlete query another's data.
+
+The combined `asgi.py` uses FastMCP's own Starlette as the root (so its session-manager lifespan fires), swaps the `/mcp` route's inner app for `AuthMiddleware(route.app, flask_app)`, and appends a `Mount("/", flask_asgi)` catch-all. Adding tools: write the function, then `mcp.tool(name=...)(fn)` inside `build_mcp()`.
 
 ### Competition periods (`athletic_elf/competition_periods.py`)
 `COMPETITION_START_DATETIME`, optional `WEEK_BOUNDARIES` (comma-separated ISO instants), and `COMPETITION_END_DATETIME` define a sequence of `PeriodSpec`s (one per end instant strictly after start). Period 0's eligibility lower bound equals the competition start; later periods back off by `GRACE_AFTER_PREVIOUS_BOUNDARY = 12 hours` so late-logged activities still count in their intended period. When a period's `end_exclusive` is reached, `summarize_next_due_period` creates a `Week` row plus per-hub/per-department `WeekScore` rows and attributes each `Activity.week_id`. `summarize_due_periods_loop` runs inside `/cron` after activity enrichment.
