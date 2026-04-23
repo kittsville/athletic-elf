@@ -158,6 +158,8 @@ def create_app(config_class: type = Config) -> Flask:
     endpoints_requiring_session = frozenset(
         {
             "main.delete_my_data",
+            "main.settings",
+            "main.settings_generate_mcp_key",
             "main.hub_department_form",
             "main.leaders",
             "main.results",

@@ -1,5 +1,6 @@
 """HTML pages, logout, and data deletion."""
 
+import secrets
 from datetime import datetime, timezone
 
 from flask import (
@@ -122,9 +123,28 @@ def hub_department_form():
     return redirect(url_for("main.index"))
 
 
-@bp.get("/gdpr")
-def gdpr():
-    return render_template("gdpr.html")
+def _render_settings_page(mcp_key_revealed: str | None = None):
+    athlete = g.current_athlete
+    has_mcp_key = bool(athlete and athlete.mcp_key)
+    return render_template(
+        "settings.html",
+        has_mcp_key=has_mcp_key,
+        mcp_key_revealed=mcp_key_revealed,
+    )
+
+
+@bp.get("/settings")
+def settings():
+    return _render_settings_page()
+
+
+@bp.post("/settings/mcp-key")
+def settings_generate_mcp_key():
+    athlete = g.current_athlete
+    raw = secrets.token_urlsafe(32)
+    athlete.mcp_key = hash_session_token(raw)
+    db.session.commit()
+    return _render_settings_page(mcp_key_revealed=raw)
 
 
 @bp.post("/delete-my-data")
