@@ -1,2 +1,2 @@
 release: flask --app app init-db
-web: gunicorn app:app
+web: gunicorn -k uvicorn.workers.UvicornWorker asgi:app
