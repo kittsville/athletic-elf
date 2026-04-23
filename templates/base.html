@@ -14,7 +14,18 @@
   <div class="dev-banner" role="status">App under development. Scores reset when competition begins</div>
   {% block app_nav %}
   <nav class="app-nav" aria-label="Main">
-    <ul>
+    <input type="checkbox" id="app-nav-toggle" class="app-nav-checkbox visually-hidden">
+    <div class="app-nav-bar">
+      <label for="app-nav-toggle" class="app-nav-burger">
+        <span class="app-nav-burger-lines" aria-hidden="true">
+          <span class="app-nav-burger-line"></span>
+          <span class="app-nav-burger-line"></span>
+          <span class="app-nav-burger-line"></span>
+        </span>
+        <span class="visually-hidden">Menu</span>
+      </label>
+    </div>
+    <ul class="app-nav-list">
       <li><a href="{{ url_for('main.index') }}">Home</a></li>
       {% if g.current_athlete %}
       <li><a href="{{ url_for('main.leaders') }}">Leaders</a></li>
