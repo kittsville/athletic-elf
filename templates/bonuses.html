@@ -1,27 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Bonuses{% endblock %}
-{% block extra_head %}
-  <style>
-    button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
-    table { border-collapse: collapse; width: 100%; max-width: 64rem; font-size: 0.95rem; }
-    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid #ddd; }
-    th { font-weight: 600; background: #f6f6f6; }
-    tbody tr:hover { background: #fafafa; }
-    .muted { color: #555; font-size: 0.9rem; }
-    .bonuses-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 44rem; }
-    .bonus-form { margin-top: 2rem; max-width: 32rem; border-top: 1px solid #ddd; padding-top: 1.25rem; }
-    .bonus-form label { display: block; margin: 0.65rem 0 0.2rem 0; font-weight: 600; }
-    .bonus-form input, .bonus-form select { font: inherit; width: 100%; max-width: 24rem; box-sizing: border-box; padding: 0.35rem 0.5rem; }
-    .bonus-form button { margin-top: 1rem; }
-    .error-msg { color: #a30; margin: 0 0 1rem 0; max-width: 40rem; }
-  </style>
-{% endblock %}
 {% block content %}
   <h1>Bonuses</h1>
   {% if error %}
     <p class="error-msg" role="alert">{{ error }}</p>
   {% endif %}
-  <table>
+  <table class="table-rows">
     <thead>
       <tr>
         <th>Created</th>
@@ -40,13 +24,12 @@
         <td>{{ row.points }}</td>
         <td>{{ row.target }}</td>
         <td title="Athlete ID: {{ row.awardee_athlete_id }}">{{ row.awardee_name }}</td>
-        <td>
+        <td class="actions-cell">
           <form
             method="post"
             action="{{ url_for('main.bonus_delete', bonus_id=row.bonus_id) }}"
-            style="display: inline;"
           >
-            <button type="submit">Delete</button>
+            <button type="submit" class="btn">Delete</button>
           </form>
         </td>
       </tr>
@@ -58,7 +41,7 @@
   </table>
 
   <section class="bonus-form" aria-labelledby="add-bonus-heading">
-    <h2 id="add-bonus-heading" style="font-size: 1.1rem; margin: 0 0 0.5rem 0;">Add bonus</h2>
+    <h2 id="add-bonus-heading" class="subheading-sm">Add bonus</h2>
     <form method="post" action="{{ url_for('main.bonuses') }}">
       <label for="bonus-name">Name</label>
       <input id="bonus-name" name="name" type="text" maxlength="255" required autocomplete="off">

@@ -1,21 +1,10 @@
 {% extends "base.html" %}
 {% block app_nav %}{% endblock %}
 {% block title %}Hub and Department{% endblock %}
-{% block extra_head %}
-  <style>
-    label { display: block; font-weight: 600; margin-top: 1rem; }
-    select { font: inherit; min-width: 16rem; padding: 0.35rem 0.5rem; }
-    button { font: inherit; padding: 0.4rem 0.75rem; cursor: pointer; margin-top: 1.25rem; }
-    a { color: #06c; }
-    .gdpr-stuff { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid #eee; max-width: 40rem; }
-    .gdpr-stuff h2 { font-size: 0.95rem; font-weight: 600; margin: 0 0 0.65rem 0; color: #333; }
-    .gdpr-stuff p { margin: 0.5rem 0; font-size: 0.95rem; line-height: 1.5; color: #444; }
-  </style>
-{% endblock %}
 {% block content %}
   <h1>{{ config.APP_NAME }}</h1>
   <p>Please select your Hub and Department</p>
-  <form method="post" action="{{ url_for('main.hub_department_form') }}">
+  <form class="hub-dept-form" method="post" action="{{ url_for('main.hub_department_form') }}">
     <label for="hub">Hub</label>
     <select id="hub" name="hub" required>
       <option value="" disabled selected>Select a hub</option>

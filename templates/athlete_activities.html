@@ -1,12 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Athlete {{ viewed_athlete_id }}{% endblock %}
-{% block extra_head %}
-  {% include "_activities_styles.html" %}
-  <style>
-    a { color: #06c; }
-    .athlete-activities-back { margin-bottom: 1rem; }
-  </style>
-{% endblock %}
 {% block content %}
   <p class="athlete-activities-back"><a href="{{ url_for('main.athletes') }}">← All athletes</a></p>
   <h1>Activities — {{ viewed_name }}</h1>

@@ -1,0 +1,495 @@
+/* --- Layout (base) --- */
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+.dev-banner {
+  background: #fff3cd;
+  color: #664d03;
+  padding: 0.65rem 1rem;
+  text-align: center;
+  border-bottom: 1px solid #e6d89c;
+  font-size: 0.95rem;
+}
+
+.app-nav {
+  background: #f8f8f8;
+  border-bottom: 1px solid #ddd;
+  padding: 0.5rem 2rem;
+}
+
+.app-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.app-nav li form {
+  display: inline;
+  margin: 0;
+}
+
+.app-nav a {
+  color: #06c;
+}
+
+.app-nav button {
+  font: inherit;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+main.page {
+  margin: 2rem;
+}
+
+main.page a {
+  color: #06c;
+}
+
+time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- Utilities --- */
+.muted {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.flush-top {
+  margin-top: 0;
+}
+
+.help-text {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.subheading-sm {
+  font-size: 1.1rem;
+  margin: 0 0 0.5rem 0;
+}
+
+/* --- Home (index) --- */
+.account-details {
+  margin: 1rem 0;
+}
+
+.account-details dt {
+  font-weight: 600;
+}
+
+.account-details dd {
+  margin: 0.25rem 0 1rem 0;
+}
+
+/* --- Bordered data tables (leaders, weeks, results) --- */
+.table-bordered {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid #ccc;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.table-bordered th {
+  background: #f5f5f5;
+}
+
+.table-bordered tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.table-bordered td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.leader-section .table-bordered {
+  max-width: 36rem;
+  margin-top: 0.75rem;
+}
+
+.period .table-bordered {
+  max-width: 52rem;
+  margin-bottom: 2rem;
+}
+
+.summary .table-bordered {
+  margin-bottom: 2rem;
+}
+
+/* --- Row-style tables (athletes, bonuses) --- */
+.table-rows {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 64rem;
+  font-size: 0.95rem;
+}
+
+.table-rows th,
+.table-rows td {
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.table-rows th {
+  font-weight: 600;
+  background: #f6f6f6;
+}
+
+.table-rows tbody tr:hover {
+  background: #fafafa;
+}
+
+.table-rows .btn {
+  font: inherit;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.table-rows td.actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.table-rows td.actions-cell form {
+  margin: 0;
+}
+
+.results-note,
+.athletes-note,
+.bonuses-note {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 0.75rem 0 0 0;
+}
+
+.results-note {
+  max-width: 40rem;
+}
+
+.athletes-note {
+  max-width: 40rem;
+}
+
+.bonuses-note {
+  max-width: 44rem;
+}
+
+.results-table-note {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+  max-width: 44rem;
+}
+
+/* --- Leaders --- */
+.rank-line {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.rank-line .medal {
+  font-style: normal;
+}
+
+.leader-section {
+  margin-bottom: 2.5rem;
+}
+
+.leader-section h2 {
+  margin: 0 0 0.35rem 0;
+  font-size: 1.25rem;
+}
+
+.leader-section > p.desc {
+  margin: 0;
+  color: #444;
+  max-width: 44rem;
+}
+
+.leaders-empty {
+  color: #555;
+  margin: 0.5rem 0 0 0;
+}
+
+/* --- Weeks --- */
+.period {
+  margin-bottom: 2rem;
+}
+
+.period > h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.35rem 0;
+}
+
+.meta {
+  color: #444;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+}
+
+/* --- Results --- */
+.summary {
+  margin-bottom: 2rem;
+}
+
+.summary > h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem 0;
+}
+
+/* --- Bonuses --- */
+.bonus-form {
+  margin-top: 2rem;
+  max-width: 32rem;
+  border-top: 1px solid #ddd;
+  padding-top: 1.25rem;
+}
+
+.bonus-form label {
+  display: block;
+  margin: 0.65rem 0 0.2rem 0;
+  font-weight: 600;
+}
+
+.bonus-form input,
+.bonus-form select {
+  font: inherit;
+  width: 100%;
+  max-width: 24rem;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+}
+
+.bonus-form button {
+  font: inherit;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+.error-msg {
+  color: #a30;
+  margin: 0 0 1rem 0;
+  max-width: 40rem;
+}
+
+/* --- Settings --- */
+.settings-page {
+  max-width: 40rem;
+}
+
+.settings-page h1 {
+  font-size: 1.35rem;
+  margin-top: 0;
+}
+
+.settings-page h2 {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.settings-page p {
+  margin: 0.75rem 0;
+}
+
+.settings-panel {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.settings-panel form {
+  margin: 0.75rem 0 0 0;
+}
+
+.settings-panel button.primary {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  color: #fff;
+  border: 1px solid #06c;
+  background: #06c;
+  border-radius: 4px;
+}
+
+.mcp-key-reveal {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #c9a227;
+  border-radius: 4px;
+  background: #fffbeb;
+}
+
+.mcp-key-reveal p {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.95rem;
+}
+
+.mcp-key-value {
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.9rem;
+  word-break: break-all;
+  background: #fff;
+  border: 1px solid #e6d89c;
+  border-radius: 4px;
+}
+
+.gdpr-danger-zone {
+  margin-top: 1.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.gdpr-danger-zone h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.gdpr-danger-zone form {
+  margin: 0.75rem 0 0 0;
+}
+
+.gdpr-danger-zone button.danger {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  color: #b00020;
+  border: 1px solid #b00020;
+  background: #fff;
+}
+
+.gdpr-danger-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+/* --- Hub / department onboarding --- */
+.hub-dept-form label {
+  display: block;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+.hub-dept-form select {
+  font: inherit;
+  min-width: 16rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.hub-dept-form button {
+  font: inherit;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  margin-top: 1.25rem;
+}
+
+.gdpr-stuff {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #eee;
+  max-width: 40rem;
+}
+
+.gdpr-stuff h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.65rem 0;
+  color: #333;
+}
+
+.gdpr-stuff p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+/* --- Error pages --- */
+.error-page h1 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.error-page p.sub {
+  color: #555;
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
+}
+
+.error-page p.hint {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+/* --- Activities (home + organiser view) --- */
+.activities-section {
+  margin-top: 2rem;
+}
+
+.activities-section h2 {
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.team-points {
+  font-size: 1.05rem;
+  margin-bottom: 1rem;
+}
+
+table.activities {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 48rem;
+  font-size: 0.95rem;
+}
+
+table.activities th,
+table.activities td {
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid #ddd;
+}
+
+table.activities th {
+  font-weight: 600;
+  background: #f6f6f6;
+}
+
+table.activities tbody tr:hover {
+  background: #fafafa;
+}
+
+.activities-intro {
+  margin: 0 0 1rem 0;
+  max-width: 48rem;
+}
+
+.athlete-activities-back {
+  margin-bottom: 1rem;
+}

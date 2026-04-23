@@ -1,75 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Settings{% endblock %}
-{% block extra_head %}
-  <style>
-    .settings-page { max-width: 40rem; }
-    .settings-page h1 { font-size: 1.35rem; margin-top: 0; }
-    .settings-page h2 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem 0; }
-    .settings-page p { margin: 0.75rem 0; }
-    .settings-panel {
-      margin-top: 1rem;
-      padding: 1rem 1.25rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: #fafafa;
-    }
-    .settings-panel form { margin: 0.75rem 0 0 0; }
-    .settings-panel button.primary {
-      font: inherit;
-      padding: 0.4rem 0.75rem;
-      cursor: pointer;
-      color: #fff;
-      border: 1px solid #06c;
-      background: #06c;
-      border-radius: 4px;
-    }
-    .mcp-key-reveal {
-      margin-top: 1rem;
-      padding: 0.85rem 1rem;
-      border: 1px solid #c9a227;
-      border-radius: 4px;
-      background: #fffbeb;
-    }
-    .mcp-key-reveal p { margin: 0 0 0.65rem 0; font-size: 0.95rem; }
-    .mcp-key-value {
-      margin: 0;
-      padding: 0.5rem 0.65rem;
-      font-size: 0.9rem;
-      word-break: break-all;
-      background: #fff;
-      border: 1px solid #e6d89c;
-      border-radius: 4px;
-    }
-    .gdpr-danger-zone {
-      margin-top: 1.75rem;
-      padding: 1rem 1.25rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: #fafafa;
-    }
-    .gdpr-danger-zone h2 { font-size: 1.05rem; margin: 0 0 0.5rem 0; }
-    .gdpr-danger-zone form { margin: 0.75rem 0 0 0; }
-    .gdpr-danger-zone button.danger {
-      font: inherit;
-      padding: 0.4rem 0.75rem;
-      cursor: pointer;
-      color: #b00020;
-      border: 1px solid #b00020;
-      background: #fff;
-    }
-  </style>
-{% endblock %}
 {% block content %}
   <div class="settings-page">
     <h1>Settings</h1>
 
     <h2>MCP access</h2>
     <div class="settings-panel">
-      <p style="margin-top: 0;">
+      <p class="flush-top">
         Generate a secret key for MCP-based tools (for example, asking an assistant how your team is doing).
       </p>
       {% if has_mcp_key and not mcp_key_revealed %}
-        <p style="font-size: 0.9rem; color: #555;">
+        <p class="help-text">
           An MCP key is already configured. Generating a new one replaces it immediately and the old key stops working.
         </p>
       {% endif %}
@@ -97,7 +38,7 @@
     </p>
     <div class="gdpr-danger-zone">
       <h2>Delete all my data</h2>
-      <p class="muted" style="margin: 0; font-size: 0.9rem; color: #555;">
+      <p class="gdpr-danger-hint">
         This removes all stored activities, sessions, and your account record in this app.
       </p>
       <form

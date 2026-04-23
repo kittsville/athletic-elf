@@ -1,19 +1,8 @@
 {% extends "base.html" %}
 {% block title %}All athletes{% endblock %}
-{% block extra_head %}
-  <style>
-    button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
-    table { border-collapse: collapse; width: 100%; max-width: 64rem; font-size: 0.95rem; }
-    th, td { text-align: left; padding: 0.5rem 0.65rem; border-bottom: 1px solid #ddd; }
-    th { font-weight: 600; background: #f6f6f6; }
-    tbody tr:hover { background: #fafafa; }
-    .muted { color: #555; font-size: 0.9rem; }
-    .athletes-note { color: #555; font-size: 0.9rem; margin: 0.75rem 0 0 0; max-width: 40rem; }
-  </style>
-{% endblock %}
 {% block content %}
   <h1>All athletes</h1>
-  <table>
+  <table class="table-rows">
     <thead>
       <tr>
         <th>ID</th>
@@ -34,32 +23,29 @@
         <td>{{ row.department }}</td>
         <td>{{ row.score }}</td>
         <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser, row.is_active) }}</td>
-        <td>
+        <td class="actions-cell">
           {% set can_manage_role = not (row.is_organiser or row.is_app_developer) %}
           {% if can_manage_role %}
             <form
               method="post"
               action="{{ url_for('main.athletes_make_organiser', athlete_pk=row.athlete_pk) }}"
-              style="display: inline;"
             >
-              <button type="submit">Make Organiser</button>
+              <button type="submit" class="btn">Make Organiser</button>
             </form>
             {% if row.is_active %}
               <form
                 method="post"
                 action="{{ url_for('main.athletes_make_inactive', athlete_pk=row.athlete_pk) }}"
-                style="display: inline; margin-left: 0.35rem;"
               >
-                <button type="submit">Make Inactive</button>
+                <button type="submit" class="btn">Make Inactive</button>
               </form>
             {% endif %}
           {% endif %}
           <form
             method="post"
             action="{{ url_for('main.athletes_resync_activities', athlete_pk=row.athlete_pk) }}"
-            style="display: inline;{% if can_manage_role %} margin-left: 0.35rem;{% endif %}"
           >
-            <button type="submit">Re-import activities</button>
+            <button type="submit" class="btn">Re-import activities</button>
           </form>
         </td>
       </tr>

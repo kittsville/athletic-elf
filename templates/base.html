@@ -6,36 +6,7 @@
   {% if config.APP_FAVICON %}
   <link rel="icon" type="image/png" sizes="32x32" href="{{ config.APP_FAVICON }}">
   {% endif %}
-  <style>
-    body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.5; }
-    .dev-banner {
-      background: #fff3cd;
-      color: #664d03;
-      padding: 0.65rem 1rem;
-      text-align: center;
-      border-bottom: 1px solid #e6d89c;
-      font-size: 0.95rem;
-    }
-    .app-nav {
-      background: #f8f8f8;
-      border-bottom: 1px solid #ddd;
-      padding: 0.5rem 2rem;
-    }
-    .app-nav ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.75rem 1.25rem;
-    }
-    .app-nav li form { display: inline; margin: 0; }
-    .app-nav a { color: #06c; }
-    .app-nav button { font: inherit; padding: 0.35rem 0.65rem; cursor: pointer; }
-    main.page { margin: 2rem; }
-    time { font-variant-numeric: tabular-nums; white-space: nowrap; }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   {% block extra_head %}{% endblock %}
 </head>
 <body>

@@ -1,19 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Home{% endblock %}
-{% block extra_head %}
-  <style>
-    dl { margin: 1rem 0; }
-    dt { font-weight: 600; }
-    dd { margin: 0.25rem 0 1rem 0; }
-    a { color: #06c; }
-  </style>
-  {% include "_activities_styles.html" %}
-{% endblock %}
 {% block content %}
   <h1>{{ config.APP_NAME }}</h1>
   {% if logged_in %}
     <p>You are signed in with Strava.</p>
-    <dl>
+    <dl class="account-details">
       <dt>Strava ID</dt>
       <dd>{{ strava_id }}</dd>
       <dt>Name</dt>
