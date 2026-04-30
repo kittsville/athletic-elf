@@ -3,7 +3,7 @@ from collections import defaultdict
 
 # Strava DetailedActivity.sport_type values (see Strava API) -> scoring category
 _SCORE_CYCLING = frozenset({"Ride", "VirtualRide", "MountainBikeRide", "GravelRide"})
-_SCORE_RUNNING = frozenset({"Run", "VirtualRun"})
+_SCORE_RUNNING = frozenset({"Run", "VirtualRun", "TrailRun"})
 _SCORE_WALKING = frozenset({"Walk", "Hike", "Golf"})
 _SCORE_SWIMMING = frozenset({"Swim"})
 _SCORE_HARD_FITNESS = frozenset(
