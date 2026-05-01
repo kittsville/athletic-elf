@@ -8,7 +8,11 @@ import unittest
 from datetime import datetime
 from types import SimpleNamespace
 
-from points import activities_total_points, team_points
+from points import (
+    activities_total_points,
+    discipline_totals_for_activities,
+    team_points,
+)
 
 
 def _activity(
@@ -38,7 +42,7 @@ class TestNoPoints(unittest.TestCase):
 
     def test_unknown_sport_type(self):
         # Not in any scoring category (per points.py Strava enum intersection)
-        acts = [_activity("EBikeRide", distance=100_000)]
+        acts = [_activity("AlpineSki", distance=100_000)]
         self.assertEqual(activities_total_points(acts), 0)
 
     def test_missing_sport_type(self):
@@ -81,6 +85,45 @@ class TestCyclingRow(unittest.TestCase):
     def test_gravel_ride_threshold(self):
         acts = [_activity("GravelRide", distance=5000)]
         self.assertEqual(activities_total_points(acts), 1)
+
+
+class TestEbikeRow(unittest.TestCase):
+    """E-bike: 10 km = 1 pt (separate bucket from human-powered cycling)."""
+
+    def test_ebike_ride_exactly_10km(self):
+        acts = [_activity("EBikeRide", distance=10_000)]
+        self.assertEqual(activities_total_points(acts), 1)
+
+    def test_emountain_bike_ride_20km_two_points(self):
+        acts = [_activity("EMountainBikeRide", distance=20_000)]
+        self.assertEqual(activities_total_points(acts), 2)
+
+    def test_ebike_below_10km_zero_points(self):
+        acts = [_activity("EBikeRide", distance=9999)]
+        self.assertEqual(activities_total_points(acts), 0)
+
+    def test_two_ebike_activities_sum_distance_bucket(self):
+        acts = [
+            _activity("EBikeRide", distance=6000),
+            _activity("EMountainBikeRide", distance=4000),
+        ]
+        self.assertEqual(activities_total_points(acts), 1)
+
+    def test_ebike_and_cycling_separate_point_buckets(self):
+        # 5 km human-powered = 1 pt; 5 km e-bike = 0 (needs 10 km)
+        acts = [
+            _activity("Ride", distance=5000),
+            _activity("EBikeRide", distance=5000),
+        ]
+        self.assertEqual(activities_total_points(acts), 1)
+
+    def test_discipline_cycle_km_includes_ebike(self):
+        acts = [
+            _activity("Ride", distance=1000),
+            _activity("EBikeRide", distance=2000),
+        ]
+        t = discipline_totals_for_activities(acts)
+        self.assertAlmostEqual(t["cycle_km"], 3.0)
 
 
 class TestRunningRow(unittest.TestCase):

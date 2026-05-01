@@ -3,6 +3,7 @@ from collections import defaultdict
 
 # Strava DetailedActivity.sport_type values (see Strava API) -> scoring category
 _SCORE_CYCLING = frozenset({"Ride", "VirtualRide", "MountainBikeRide", "GravelRide"})
+_SCORE_EBIKE = frozenset({"EBikeRide", "EMountainBikeRide"})
 _SCORE_RUNNING = frozenset({"Run", "VirtualRun", "TrailRun"})
 _SCORE_WALKING = frozenset({"Walk", "Hike", "Golf"})
 _SCORE_SWIMMING = frozenset({"Swim"})
@@ -45,6 +46,7 @@ _SCORE_EASY_FITNESS = frozenset(
 _SCORE_ZEN_MASTER = frozenset({"Yoga"})
 
 CYCLING_METERS_PER_POINT = 5000
+EBIKE_METERS_PER_POINT = 10_000
 RUNNING_METERS_PER_POINT = 1600
 WALKING_METERS_PER_POINT = 2000
 SWIMMING_METERS_PER_POINT = 400
@@ -73,6 +75,7 @@ def activities_total_points(activities):
     Activities without a recognized sport_type contribute 0.
     """
     sum_cycling = 0.0
+    sum_ebike = 0.0
     sum_running = 0.0
     sum_walking = 0.0
     sum_swim = 0.0
@@ -92,7 +95,9 @@ def activities_total_points(activities):
                 easy_time_by_day[day] += mt
             continue
 
-        if st in _SCORE_CYCLING:
+        if st in _SCORE_EBIKE:
+            sum_ebike += dist
+        elif st in _SCORE_CYCLING:
             sum_cycling += dist
         elif st in _SCORE_RUNNING:
             sum_running += dist
@@ -105,6 +110,7 @@ def activities_total_points(activities):
 
     total = 0
     total += int(sum_cycling // CYCLING_METERS_PER_POINT)
+    total += int(sum_ebike // EBIKE_METERS_PER_POINT)
     total += int(sum_running // RUNNING_METERS_PER_POINT)
     total += int(sum_walking // WALKING_METERS_PER_POINT)
     total += int(sum_swim // SWIMMING_METERS_PER_POINT)
@@ -125,7 +131,8 @@ def discipline_totals_for_activities(activities):
     start_date are typically passed in — same rows as scoring).
 
     Returns a dict: swim_km, walk_km, cycle_km, run_km (float), hard_min,
-    zen_min (int minutes, floor of summed moving_time).
+    zen_min (int minutes, floor of summed moving_time). cycle_km includes
+    traditional cycling and e-bike (Centurion leaderboard) distances.
     """
     sum_cycling = 0.0
     sum_running = 0.0
@@ -143,7 +150,7 @@ def discipline_totals_for_activities(activities):
 
         if st in _SCORE_ZEN_MASTER:
             sum_zen_time += mt
-        elif st in _SCORE_CYCLING:
+        elif st in _SCORE_CYCLING or st in _SCORE_EBIKE:
             sum_cycling += dist
         elif st in _SCORE_RUNNING:
             sum_running += dist
