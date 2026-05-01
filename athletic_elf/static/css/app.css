@@ -126,6 +126,23 @@ main.page {
   min-width: 0;
 }
 
+.app-footer {
+  margin-top: 2rem;
+  padding: 1.25rem 2rem 2rem;
+  border-top: 1px solid #eee;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.app-footer-text {
+  margin: 0;
+  max-width: 48rem;
+}
+
+.app-footer a {
+  color: #06c;
+}
+
 /* Horizontal scroll for wide tables without shrinking columns unreadably */
 .table-scroll {
   overflow-x: auto;
@@ -637,6 +654,10 @@ table.activities tbody tr:hover {
 @media (max-width: 45rem) {
   main.page {
     margin: 1rem 0.75rem;
+  }
+
+  .app-footer {
+    padding: 1rem 0.75rem 1.5rem;
   }
 
   h1 {
