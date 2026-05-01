@@ -445,3 +445,43 @@ class TestAthletesIndexPage(unittest.TestCase):
         pos_zed = text.find("Zed Organiser")
         self.assertLess(pos_amy, pos_bob)
         self.assertLess(pos_bob, pos_zed)
+
+    def test_filter_hub_shows_only_same_hub(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        rv = self.client.get("/athletes?filter=hub")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        self.assertIn("Zed Organiser", text)
+        self.assertNotIn("Amy Participant", text)
+        self.assertNotIn("Bob Participant", text)
+
+    def test_filter_department_shows_only_same_department(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        rv = self.client.get("/athletes?filter=department")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        self.assertIn("Zed Organiser", text)
+        self.assertNotIn("Amy Participant", text)
+        self.assertNotIn("Bob Participant", text)
+
+    def test_invalid_filter_param_shows_all(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        rv = self.client.get("/athletes?filter=notafilter")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        self.assertIn("Zed Organiser", text)
+        self.assertIn("Amy Participant", text)
+        self.assertIn("Bob Participant", text)
+
+    def test_filter_preserves_sort_query(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        rv = self.client.get("/athletes?filter=hub&sort=name&order=asc")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        self.assertIn("sort=name", text)
+        self.assertIn("order=asc", text)
+        self.assertIn("filter=hub", text)

@@ -274,6 +274,43 @@ time {
   margin: 0;
 }
 
+.athletes-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  max-width: 64rem;
+}
+
+.athletes-filter-btn {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: #222;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.athletes-filter-btn:hover {
+  background: #f5f5f5;
+}
+
+.athletes-filter-btn.is-active {
+  background: #e8eef8;
+  border-color: #06c;
+  color: #06c;
+  font-weight: 600;
+}
+
+.athletes-filter-btn:focus-visible {
+  outline: 2px solid #06c;
+  outline-offset: 2px;
+}
+
 .results-note,
 .athletes-note,
 .bonuses-note {

@@ -38,6 +38,7 @@ from ..utils import (
 bp = Blueprint("main", __name__)
 
 _ATHLETES_SORTABLE = frozenset({"name", "hub", "department", "score", "role"})
+_ATHLETES_FILTERS = frozenset({"all", "hub", "department"})
 
 
 def _points_by_athlete_strava_id() -> dict[int, int]:
@@ -278,6 +279,29 @@ def athletes():
         .order_by(Athlete.athlete_id.asc())
         .all()
     )
+    filter_mode = (request.args.get("filter") or "all").strip().lower()
+    if filter_mode not in _ATHLETES_FILTERS:
+        filter_mode = "all"
+    my_hub = (athlete.hub or "").strip()
+    my_dept = (athlete.department or "").strip()
+    if filter_mode == "hub":
+        if my_hub:
+            roster = [
+                a
+                for a in roster
+                if (a.hub or "").strip().casefold() == my_hub.casefold()
+            ]
+        else:
+            roster = [a for a in roster if not (a.hub or "").strip()]
+    elif filter_mode == "department":
+        if my_dept:
+            roster = [
+                a
+                for a in roster
+                if (a.department or "").strip().casefold() == my_dept.casefold()
+            ]
+        else:
+            roster = [a for a in roster if not (a.department or "").strip()]
     dev_ids = current_app.config["APP_DEVELOPER_IDS"]
     points_by = _points_by_athlete_strava_id()
     table_rows = [
@@ -321,11 +345,17 @@ def athletes():
             return (label.casefold(), aid)
 
         table_rows.sort(key=_row_sort_key, reverse=reverse)
+    athletes_sort_qs: dict[str, str] = {}
+    if sort_col is not None:
+        athletes_sort_qs["sort"] = sort_col
+        athletes_sort_qs["order"] = sort_order
     return render_template(
         "athletes.html",
         rows=table_rows,
         athletes_sort=sort_col,
         athletes_order=sort_order,
+        athletes_filter=filter_mode,
+        athletes_sort_qs=athletes_sort_qs,
     )
 
 

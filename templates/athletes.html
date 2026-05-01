@@ -2,25 +2,39 @@
 {% block title %}All athletes{% endblock %}
 {% block content %}
   <h1>All athletes</h1>
+  <nav class="athletes-filters" aria-label="Filter athletes list">
+    <a
+      href="{{ url_for('main.athletes', filter='all', **athletes_sort_qs) }}"
+      class="athletes-filter-btn{% if athletes_filter == 'all' %} is-active{% endif %}"
+    >All Athletes</a>
+    <a
+      href="{{ url_for('main.athletes', filter='hub', **athletes_sort_qs) }}"
+      class="athletes-filter-btn{% if athletes_filter == 'hub' %} is-active{% endif %}"
+    >In my Hub</a>
+    <a
+      href="{{ url_for('main.athletes', filter='department', **athletes_sort_qs) }}"
+      class="athletes-filter-btn{% if athletes_filter == 'department' %} is-active{% endif %}"
+    >In my Department</a>
+  </nav>
   <div class="table-scroll">
   <table class="table-rows">
     <thead>
       <tr>
         <th>ID</th>
         <th class="table-sort"{% if athletes_sort == "name" %} aria-sort="{{ 'descending' if athletes_order == 'desc' else 'ascending' }}"{% endif %}>
-          <a href="{{ url_for('main.athletes', sort='name', order=('desc' if athletes_sort == 'name' and athletes_order == 'asc' else 'asc')) }}">Name</a>{% if athletes_sort == "name" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
+          <a href="{{ url_for('main.athletes', filter=athletes_filter, sort='name', order=('desc' if athletes_sort == 'name' and athletes_order == 'asc' else 'asc')) }}">Name</a>{% if athletes_sort == "name" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
         </th>
         <th class="table-sort"{% if athletes_sort == "hub" %} aria-sort="{{ 'descending' if athletes_order == 'desc' else 'ascending' }}"{% endif %}>
-          <a href="{{ url_for('main.athletes', sort='hub', order=('desc' if athletes_sort == 'hub' and athletes_order == 'asc' else 'asc')) }}">Hub</a>{% if athletes_sort == "hub" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
+          <a href="{{ url_for('main.athletes', filter=athletes_filter, sort='hub', order=('desc' if athletes_sort == 'hub' and athletes_order == 'asc' else 'asc')) }}">Hub</a>{% if athletes_sort == "hub" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
         </th>
         <th class="table-sort"{% if athletes_sort == "department" %} aria-sort="{{ 'descending' if athletes_order == 'desc' else 'ascending' }}"{% endif %}>
-          <a href="{{ url_for('main.athletes', sort='department', order=('desc' if athletes_sort == 'department' and athletes_order == 'asc' else 'asc')) }}">Department</a>{% if athletes_sort == "department" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
+          <a href="{{ url_for('main.athletes', filter=athletes_filter, sort='department', order=('desc' if athletes_sort == 'department' and athletes_order == 'asc' else 'asc')) }}">Department</a>{% if athletes_sort == "department" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
         </th>
         <th class="table-sort"{% if athletes_sort == "score" %} aria-sort="{{ 'descending' if athletes_order == 'desc' else 'ascending' }}"{% endif %}>
-          <a href="{{ url_for('main.athletes', sort='score', order=('desc' if athletes_sort == 'score' and athletes_order == 'asc' else 'asc')) }}">Score</a>{% if athletes_sort == "score" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
+          <a href="{{ url_for('main.athletes', filter=athletes_filter, sort='score', order=('desc' if athletes_sort == 'score' and athletes_order == 'asc' else 'asc')) }}">Score</a>{% if athletes_sort == "score" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
         </th>
         <th class="table-sort"{% if athletes_sort == "role" %} aria-sort="{{ 'descending' if athletes_order == 'desc' else 'ascending' }}"{% endif %}>
-          <a href="{{ url_for('main.athletes', sort='role', order=('desc' if athletes_sort == 'role' and athletes_order == 'asc' else 'asc')) }}">Role</a>{% if athletes_sort == "role" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
+          <a href="{{ url_for('main.athletes', filter=athletes_filter, sort='role', order=('desc' if athletes_sort == 'role' and athletes_order == 'asc' else 'asc')) }}">Role</a>{% if athletes_sort == "role" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
         </th>
         <th>Actions</th>
       </tr>
