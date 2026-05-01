@@ -239,6 +239,20 @@ time {
   background: #f6f6f6;
 }
 
+.table-rows th.table-sort a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.table-rows th.table-sort a:hover {
+  text-decoration: underline;
+}
+
+.table-rows th.table-sort .table-sort-indicator {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
 .table-rows tbody tr:hover {
   background: #fafafa;
 }

@@ -322,3 +322,126 @@ class TestAthletesResyncActivities(unittest.TestCase):
             rv = self.client.post("/athletes/999999999/resync-activities")
         self.assertEqual(rv.status_code, 404)
         mock_sync.assert_not_called()
+
+
+class TestAthletesIndexPage(unittest.TestCase):
+    """Organiser-only /athletes table and query-param sorting."""
+
+    def setUp(self):
+        self.app = create_app(_TestHubDeptConfig)
+        self.app.config["TESTING"] = True
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset()
+        self.client = self.app.test_client()
+
+    def _login(self, token: str) -> None:
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = token
+
+    def _seed_sorted_table(self) -> str:
+        """Organiser Zed (id first), then Amy, Bob — default list order follows ids."""
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=940_001,
+                firstname="Zed",
+                lastname="Organiser",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            amy = Athlete(
+                athlete_id=940_002,
+                firstname="Amy",
+                lastname="Participant",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            bob = Athlete(
+                athlete_id=940_003,
+                firstname="Bob",
+                lastname="Participant",
+                access_token="at3",
+                refresh_token="rt3",
+                expires_at=2_000_000_000,
+                hub="East Hub",
+                department="Marketing",
+            )
+            db.session.add_all([organiser, amy, bob])
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+            return raw
+
+    def test_non_organiser_forbidden(self):
+        with self.app.app_context():
+            u = Athlete(
+                athlete_id=940_010,
+                firstname="P",
+                lastname="art",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=False,
+            )
+            db.session.add(u)
+            db.session.flush()
+            raw, _ = create_browser_session(int(u.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.get("/athletes")
+        self.assertEqual(rv.status_code, 403)
+
+    def test_sort_name_asc(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        rv = self.client.get("/athletes?sort=name&order=asc")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        pos_amy = text.find("Amy Participant")
+        pos_bob = text.find("Bob Participant")
+        pos_zed = text.find("Zed Organiser")
+        self.assertLess(pos_amy, pos_bob)
+        self.assertLess(pos_bob, pos_zed)
+
+    def test_invalid_sort_param_ignored(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        rv = self.client.get("/athletes?sort=notacolumn&order=desc")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        pos_zed = text.find("Zed Organiser")
+        pos_amy = text.find("Amy Participant")
+        pos_bob = text.find("Bob Participant")
+        self.assertLess(pos_zed, pos_amy)
+        self.assertLess(pos_amy, pos_bob)
+
+    def test_sort_score_desc_tiebreak_by_id(self):
+        token = self._seed_sorted_table()
+        self._login(token)
+        with self.app.app_context():
+            db.session.add(
+                Activity(
+                    activity_id=77_902,
+                    athlete_id=940_002,
+                    distance=50_000.0,
+                    sport_type="Run",
+                    start_date=datetime(2026, 1, 10, 12, 0, tzinfo=timezone.utc),
+                    moving_time=3600,
+                )
+            )
+            db.session.commit()
+        rv = self.client.get("/athletes?sort=score&order=desc")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        pos_amy = text.find("Amy Participant")
+        pos_bob = text.find("Bob Participant")
+        pos_zed = text.find("Zed Organiser")
+        self.assertLess(pos_amy, pos_bob)
+        self.assertLess(pos_bob, pos_zed)

@@ -29,9 +29,15 @@ from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
 from ..models import Activity, Athlete, Bonus, BrowserSession, Week, WeekScore
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..team_scoring import summaries_by_hub_and_department
-from ..utils import athlete_display_name, athlete_hub_department_complete
+from ..utils import (
+    athlete_display_name,
+    athlete_hub_department_complete,
+    athlete_role_label,
+)
 
 bp = Blueprint("main", __name__)
+
+_ATHLETES_SORTABLE = frozenset({"name", "hub", "department", "score", "role"})
 
 
 def _points_by_athlete_strava_id() -> dict[int, int]:
@@ -288,7 +294,39 @@ def athletes():
         }
         for a in roster
     ]
-    return render_template("athletes.html", rows=table_rows)
+    sort_col = (request.args.get("sort") or "").strip().lower()
+    if sort_col not in _ATHLETES_SORTABLE:
+        sort_col = None
+    sort_order = (request.args.get("order") or "asc").strip().lower()
+    if sort_order not in ("asc", "desc"):
+        sort_order = "asc"
+    if sort_col is not None:
+        reverse = sort_order == "desc"
+
+        def _row_sort_key(row: dict[str, object]) -> tuple[object, int]:
+            aid = int(row["athlete_id"])
+            if sort_col == "name":
+                return (str(row["name"]).casefold(), aid)
+            if sort_col == "hub":
+                return (str(row["hub"]).casefold(), aid)
+            if sort_col == "department":
+                return (str(row["department"]).casefold(), aid)
+            if sort_col == "score":
+                return (int(row["score"]), aid)
+            label = athlete_role_label(
+                bool(row["is_app_developer"]),
+                bool(row["is_organiser"]),
+                bool(row["is_active"]),
+            )
+            return (label.casefold(), aid)
+
+        table_rows.sort(key=_row_sort_key, reverse=reverse)
+    return render_template(
+        "athletes.html",
+        rows=table_rows,
+        athletes_sort=sort_col,
+        athletes_order=sort_order,
+    )
 
 
 @bp.get("/athletes/<int:athlete_id>")
