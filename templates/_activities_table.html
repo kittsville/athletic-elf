@@ -17,7 +17,7 @@
             {% if a.start_date %}
               {{ a.start_date|utc_time }}
             {% else %}
-              <span class="muted">Pending sync</span>
+              <span class="muted">Pending sync (every 10 minutes)</span>
             {% endif %}
           </td>
           <td>{{ a.sport_type or "—" }}</td>
