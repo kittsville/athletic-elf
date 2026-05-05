@@ -105,6 +105,12 @@ def leaderboard_sections() -> list[dict[str, object]]:
             return f"Athlete {aid}"
         return athlete_display_name(p.firstname or "", p.lastname or "")
 
+    def _hub(aid: int) -> str:
+        p = profiles.get(aid)
+        if p is None:
+            return "—"
+        return (p.hub or "").strip() or "—"
+
     stats_rows: list[tuple[int, dict[str, float | int], int]] = []
     for aid, acts in by_athlete.items():
         d = discipline_totals_for_activities(acts)
@@ -139,7 +145,14 @@ def leaderboard_sections() -> list[dict[str, object]]:
                 stat_display = f"{float(d[stat_key]):.1f} km"
             else:
                 stat_display = f"{int(d[stat_key])} min"
-            out.append({"rank": rank, "name": _name(aid), "stat_display": stat_display})
+            out.append(
+                {
+                    "rank": rank,
+                    "name": _name(aid),
+                    "hub": _hub(aid),
+                    "stat_display": stat_display,
+                }
+            )
         return out
 
     return [

@@ -154,6 +154,58 @@ class TestLeadersPage(unittest.TestCase):
             r.data.find(b"Bob Wade"),
         )
 
+    def test_hub_shown_on_leaderboard(self):
+        browser_token = ""
+        with self.app.app_context():
+            db.session.add_all(
+                [
+                    Athlete(
+                        athlete_id=301,
+                        firstname="Hub",
+                        lastname="Athlete",
+                        hub="North Hub",
+                        access_token="a",
+                        refresh_token="r",
+                        expires_at=2_000_000_000,
+                    ),
+                    Athlete(
+                        athlete_id=302,
+                        firstname="No",
+                        lastname="Hub",
+                        access_token="a",
+                        refresh_token="r",
+                        expires_at=2_000_000_000,
+                    ),
+                    Activity(
+                        activity_id=1101,
+                        athlete_id=301,
+                        distance=1000,
+                        sport_type="Swim",
+                        start_date=_D0,
+                        moving_time=600,
+                    ),
+                    Activity(
+                        activity_id=1102,
+                        athlete_id=302,
+                        distance=500,
+                        sport_type="Swim",
+                        start_date=_D0,
+                        moving_time=300,
+                    ),
+                ]
+            )
+            db.session.commit()
+            browser_token, _ = create_browser_session(301)
+            db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = browser_token
+
+        r = self.client.get("/leaders")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(b"North Hub", r.data)
+        self.assertIn("—".encode(), r.data)
+
     def test_athlete_with_zero_for_category_absent_from_that_table(self):
         browser_token = ""
         with self.app.app_context():
