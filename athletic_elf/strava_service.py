@@ -216,7 +216,7 @@ def maybe_refresh_athlete_token(athlete: Athlete) -> None:
     athlete.expires_at = data["expires_at"]
 
 
-def process_activities(limit=10):
+def process_activities(limit: int):
     cfg = current_app.config
     api_base = cfg["STRAVA_API_BASE"]
     pending = (

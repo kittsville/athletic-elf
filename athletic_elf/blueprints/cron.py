@@ -35,7 +35,7 @@ def run_cron_maintenance(app) -> None:
             removed_sessions = BrowserSession.query.filter(
                 BrowserSession.expires_at < now
             ).delete(synchronize_session=False)
-            n = process_activities(50)
+            n = process_activities(75)
             db.session.commit()
             n_periods = summarize_due_periods_loop(app)
             db.session.commit()
