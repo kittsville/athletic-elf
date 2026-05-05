@@ -139,7 +139,15 @@ def leaderboard_sections() -> list[dict[str, object]]:
                 stat_display = f"{float(d[stat_key]):.1f} km"
             else:
                 stat_display = f"{int(d[stat_key])} min"
-            out.append({"rank": rank, "name": _name(aid), "stat_display": stat_display})
+            p = profiles.get(aid)
+            out.append(
+                {
+                    "rank": rank,
+                    "name": _name(aid),
+                    "hub": p.hub or "" if p is not None else "",
+                    "stat_display": stat_display,
+                }
+            )
         return out
 
     return [

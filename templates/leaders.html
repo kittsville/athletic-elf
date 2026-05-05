@@ -13,6 +13,7 @@
         <tr>
           <th scope="col">Rank</th>
           <th scope="col">Athlete</th>
+          <th scope="col">Hub</th>
           <th scope="col" class="num">{{ section.stat_header }}</th>
         </tr>
       </thead>
@@ -28,6 +29,7 @@
             </span>
           </td>
           <td>{{ row.name }}</td>
+          <td>{{ row.hub }}</td>
           <td class="num">{{ row.stat_display }}</td>
         </tr>
         {% endfor %}
