@@ -96,7 +96,7 @@ def tool_get_my_points_breakdown() -> dict:
     """Your total competition points plus per-discipline volume (km, minutes)."""
     acts = _athlete_activities_with_start_date()
     return {
-        "total_points": int(activities_total_points(acts)),
+        "total_points": activities_total_points(acts),
         "disciplines": discipline_totals_for_activities(acts),
         "activity_count": len(acts),
     }
