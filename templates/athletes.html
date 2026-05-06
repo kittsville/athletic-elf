@@ -73,6 +73,16 @@
                 <button type="submit" class="btn">Make Inactive</button>
               </form>
             {% endif %}
+          {% endif %}
+          <form
+            method="post"
+            action="{{ url_for('main.athletes_resync_activities', athlete_pk=row.athlete_pk) }}"
+          >
+            <button type="submit" class="btn" aria-label="Re-import activities" title="Re-import activities">
+              <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+            </button>
+          </form>
+          {% if can_manage_role %}
             <form
               method="post"
               action="{{ url_for('main.athletes_delete', athlete_pk=row.athlete_pk) }}"
@@ -103,14 +113,6 @@
               </button>
             </form>
           {% endif %}
-          <form
-            method="post"
-            action="{{ url_for('main.athletes_resync_activities', athlete_pk=row.athlete_pk) }}"
-          >
-            <button type="submit" class="btn" aria-label="Re-import activities" title="Re-import activities">
-              <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
-            </button>
-          </form>
         </td>
       </tr>
     {% endfor %}
