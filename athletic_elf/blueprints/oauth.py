@@ -77,6 +77,9 @@ def oauth_callback():
     lastname = athlete_info.get("lastname") or ""
 
     row = Athlete.query.filter_by(athlete_id=aid).first()
+    if row is None and cfg["BLOCK_SIGNUPS"]:
+        return "New athlete registration is currently disabled.", 403
+
     if row is None:
         row = Athlete(
             athlete_id=aid,

@@ -70,7 +70,10 @@ def _activities_for_athlete(athlete_strava_id: int) -> list[Activity]:
 def inject_nav_context():
     athlete = getattr(g, "current_athlete", None)
     show_organiser_nav = athlete is not None and _can_perform_organiser_tasks(athlete)
-    return {"show_organiser_nav": show_organiser_nav}
+    return {
+        "show_organiser_nav": show_organiser_nav,
+        "block_signups": bool(current_app.config["BLOCK_SIGNUPS"]),
+    }
 
 
 @bp.get("/")

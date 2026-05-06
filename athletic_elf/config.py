@@ -159,6 +159,9 @@ class Config:
         "ENFORCE_HTTPS",
         default=os.environ.get("FLASK_ENV") == "production",
     )
+    # When true, OAuth callback rejects athletes not already in the database; existing athletes
+    # can still sign in.
+    BLOCK_SIGNUPS = _env_bool("BLOCK_SIGNUPS", default=False)
     # SESSION_COOKIE_SECURE is applied in create_app() from the resolved ENFORCE_HTTPS flag.
     SESSION_COOKIE_SAMESITE = "Lax"
 
