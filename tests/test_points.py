@@ -189,6 +189,7 @@ class TestHardFitnessRow(unittest.TestCase):
             "InlineSkate",
             "Basketball",
             "Pilates",
+            "Padel",
         )
         moving_time = 15 * 60
         for sport_type in sports:
@@ -221,7 +222,6 @@ class TestEasyFitnessRow(unittest.TestCase):
             "Kitesurf",
             "Sail",
             "Volleyball",
-            "Padel",
         )
         for sport_type in sports:
             with self.subTest(sport_type=sport_type, rule="30min_one_point"):
