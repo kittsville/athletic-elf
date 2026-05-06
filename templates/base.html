@@ -49,7 +49,11 @@
   </main>
   <footer class="app-footer" role="contentinfo">
     <p class="app-footer-text">
-      This app is <a href="https://github.com/kittsville/athletic-elf">open source</a>, contributions welcome
+      {% if config.HEROKU_BUILD_COMMIT %}
+      <a href="https://github.com/kittsville/athletic-elf/commit/{{ config.HEROKU_BUILD_COMMIT }}">v{{ config.HEROKU_BUILD_COMMIT[:8] }}</a> deployed (<a href="https://github.com/kittsville/athletic-elf">source code</a>). Contributions welcome!
+      {% else %}
+      (local development version)
+      {% endif %}
     </p>
   </footer>
 </body>
