@@ -53,7 +53,7 @@ class TestNoPoints(unittest.TestCase):
         acts = [_activity("", distance=10_000)]
         self.assertEqual(activities_total_points(acts), 0)
 
-    def test_below_threshold_single_activity(self):
+    def test_single_activity_fractional_points(self):
         acts = [_activity("Ride", distance=4999)]
         self.assertAlmostEqual(activities_total_points(acts), 4999 / 5000)
 
