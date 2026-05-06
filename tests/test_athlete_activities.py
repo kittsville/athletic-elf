@@ -195,6 +195,200 @@ class TestAthletesMakeInactive(unittest.TestCase):
         self.assertEqual(rv.status_code, 403)
 
 
+class TestAthletesDelete(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(_TestHubDeptConfig)
+        self.app.config["TESTING"] = True
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset()
+        self.client = self.app.test_client()
+
+    def _login(self, token: str) -> None:
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = token
+
+    def _seed(self) -> tuple[str, int]:
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=933_001,
+                firstname="Org",
+                lastname="One",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            target = Athlete(
+                athlete_id=933_002,
+                firstname="Tar",
+                lastname="Get",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            db.session.add_all([organiser, target])
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.add(
+                Activity(
+                    activity_id=79_001,
+                    athlete_id=933_002,
+                    distance=1000.0,
+                    sport_type="Run",
+                    start_date=datetime(2026, 3, 1, 12, 0, tzinfo=timezone.utc),
+                    moving_time=600,
+                )
+            )
+            db.session.commit()
+            return raw, int(target.athlete_id)
+
+    def test_organiser_deletes_athlete(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.post(
+            f"/athletes/{target_pk}/delete",
+            follow_redirects=False,
+        )
+        self.assertEqual(rv.status_code, 302)
+        self.assertTrue(rv.location.endswith("/athletes"))
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(Athlete, target_pk))
+
+    def test_app_developer_actor_can_delete_participant(self):
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset({933_100})
+        with self.app.app_context():
+            dev = Athlete(
+                athlete_id=933_100,
+                firstname="Dev",
+                lastname="Only",
+                access_token="atd",
+                refresh_token="rtd",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=False,
+            )
+            victim = Athlete(
+                athlete_id=933_101,
+                firstname="V",
+                lastname="ictim",
+                access_token="atv",
+                refresh_token="rtv",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            db.session.add_all([dev, victim])
+            db.session.flush()
+            raw, _ = create_browser_session(int(dev.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.post("/athletes/933101/delete", follow_redirects=False)
+        self.assertEqual(rv.status_code, 302)
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(Athlete, 933_101))
+
+    def test_non_organiser_forbidden(self):
+        with self.app.app_context():
+            u = Athlete(
+                athlete_id=933_010,
+                firstname="P",
+                lastname="eer",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=False,
+            )
+            victim = Athlete(
+                athlete_id=933_011,
+                firstname="V",
+                lastname="ic",
+                access_token="at3",
+                refresh_token="rt3",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+            )
+            db.session.add_all([u, victim])
+            db.session.flush()
+            raw, _ = create_browser_session(int(u.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.post("/athletes/933011/delete")
+        self.assertEqual(rv.status_code, 403)
+        with self.app.app_context():
+            self.assertIsNotNone(db.session.get(Athlete, 933_011))
+
+    def test_cannot_delete_organiser_target(self):
+        token, _ = self._seed()
+        self._login(token)
+        rv = self.client.post("/athletes/933001/delete")
+        self.assertEqual(rv.status_code, 403)
+        with self.app.app_context():
+            self.assertIsNotNone(db.session.get(Athlete, 933_001))
+
+    def test_cannot_delete_app_developer_target(self):
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset({933_003})
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=933_201,
+                firstname="Org",
+                lastname="Two",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            developer = Athlete(
+                athlete_id=933_003,
+                firstname="Dev",
+                lastname="Eloper",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+                is_organiser=False,
+            )
+            db.session.add_all([organiser, developer])
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.post("/athletes/933003/delete")
+        self.assertEqual(rv.status_code, 403)
+        with self.app.app_context():
+            self.assertIsNotNone(db.session.get(Athlete, 933_003))
+
+    def test_unknown_athlete_404(self):
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=933_301,
+                firstname="O",
+                lastname="r",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            db.session.add(organiser)
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.post("/athletes/999999999/delete")
+        self.assertEqual(rv.status_code, 404)
+
+
 class TestAthletesResyncActivities(unittest.TestCase):
     def setUp(self):
         self.app = create_app(_TestHubDeptConfig)

@@ -414,6 +414,24 @@ def athletes_make_inactive(athlete_pk: int):
     return redirect(url_for("main.athletes"))
 
 
+@bp.post("/athletes/<int:athlete_pk>/delete")
+def athletes_delete(athlete_pk: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    target = db.session.get(Athlete, athlete_pk)
+    if target is None:
+        abort(404)
+    if (
+        target.is_organiser
+        or int(target.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    ):
+        abort(403)
+    db.session.delete(target)
+    db.session.commit()
+    return redirect(url_for("main.athletes"))
+
+
 @bp.post("/athletes/<int:athlete_pk>/resync-activities")
 def athletes_resync_activities(athlete_pk: int):
     actor = g.current_athlete
