@@ -1,6 +1,12 @@
 """SQLAlchemy models."""
 
+from datetime import datetime, timezone
+
 from .extensions import db
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Athlete(db.Model):
@@ -16,6 +22,11 @@ class Athlete(db.Model):
     is_organiser = db.Column(db.Boolean, nullable=False, default=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     mcp_key = db.Column(db.String(64), nullable=True, unique=True, index=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+    )
 
 
 class Activity(db.Model):

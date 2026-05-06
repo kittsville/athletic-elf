@@ -2,16 +2,24 @@
 
 import secrets
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, abort, current_app, request
+from sqlalchemy import func, or_
 
 from ..competition_periods import summarize_due_periods_loop
 from ..extensions import db
-from ..models import BrowserSession
+from ..models import Athlete, BrowserSession
 from ..strava_service import process_activities
 
 bp = Blueprint("cron", __name__)
+
+
+def _athlete_missing_hub_or_department_clause():
+    """Matches rows where ``athlete_hub_department_complete`` would be false."""
+    h_len = func.length(func.trim(func.coalesce(Athlete.hub, "")))
+    d_len = func.length(func.trim(func.coalesce(Athlete.department, "")))
+    return or_(h_len == 0, d_len == 0)
 
 
 def cron_authorization_ok(expected: str, authorization: str | None) -> bool:
@@ -35,12 +43,18 @@ def run_cron_maintenance(app) -> None:
             removed_sessions = BrowserSession.query.filter(
                 BrowserSession.expires_at < now
             ).delete(synchronize_session=False)
+            cutoff = now - timedelta(hours=24)
+            removed_incomplete = Athlete.query.filter(
+                Athlete.created_at < cutoff,
+                _athlete_missing_hub_or_department_clause(),
+            ).delete(synchronize_session=False)
             n = process_activities(75)
             db.session.commit()
             n_periods = summarize_due_periods_loop(app)
             db.session.commit()
             summary = (
                 f"Processed {n} activities, removed {removed_sessions} expired session(s), "
+                f"removed {removed_incomplete} stale incomplete athlete(s), "
                 f"summarized {n_periods} competition period(s)"
             )
             app.logger.info(summary)
