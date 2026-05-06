@@ -1,5 +1,6 @@
 """Small helpers (formatting, OAuth base URL, Strava datetimes)."""
 
+import hashlib
 from datetime import datetime, timezone
 from urllib.parse import quote
 
@@ -33,6 +34,11 @@ def strava_webhook_callback_url(verify_token: str) -> str:
             "VERIFY_TOKEN must be non-empty to build a webhook callback URL"
         )
     return f"{domain_base()}/webhook/{quote(vt, safe='')}"
+
+
+def banned_strava_id_hash(strava_id: int) -> str:
+    """SHA-256 hex of the Strava athlete id (used in Ban; stable per user)."""
+    return hashlib.sha256(str(int(strava_id)).encode("utf-8")).hexdigest()
 
 
 def athlete_hub_department_complete(hub: str | None, department: str | None) -> bool:

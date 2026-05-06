@@ -8,7 +8,8 @@ from flask import Blueprint, current_app, redirect, request, session, url_for
 
 from ..background import schedule_initial_activity_sync
 from ..extensions import db
-from ..models import Athlete
+from ..models import Athlete, Ban
+from ..utils import banned_strava_id_hash
 from ..session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 from ..strava_service import ensure_push_subscription
 from ..utils import athlete_hub_department_complete, oauth_redirect_uri
@@ -77,10 +78,16 @@ def oauth_callback():
     lastname = athlete_info.get("lastname") or ""
 
     row = Athlete.query.filter_by(athlete_id=aid).first()
-    if row is None and cfg["BLOCK_SIGNUPS"]:
-        return "New athlete registration is currently disabled.", 403
-
     if row is None:
+        if Ban.query.filter_by(banned_id_hash=banned_strava_id_hash(int(aid))).first():
+            return (
+                "This Strava account is not allowed to register.",
+                403,
+            )
+
+        if cfg["BLOCK_SIGNUPS"]:
+            return "New athlete registration is currently disabled.", 403
+
         row = Athlete(
             athlete_id=aid,
             firstname=firstname,

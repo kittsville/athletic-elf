@@ -118,3 +118,18 @@ class Bonus(db.Model):
     )
 
     awardee = db.relationship("Athlete", foreign_keys=[athlete_id])
+
+
+class Ban(db.Model):
+    """Strava users blocked from re-registering after a ban+delete; tied to the banning organiser."""
+
+    __tablename__ = "ban"
+    id = db.Column(db.Integer, primary_key=True)
+    banned_id_hash = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    banned_by_athlete_id = db.Column(
+        db.BigInteger,
+        db.ForeignKey("athlete.athlete_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )

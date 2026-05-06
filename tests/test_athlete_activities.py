@@ -6,7 +6,8 @@ from unittest.mock import patch
 
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
-from athletic_elf.models import Activity, Athlete
+from athletic_elf.models import Activity, Athlete, Ban
+from athletic_elf.utils import banned_strava_id_hash
 from athletic_elf.session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 
 from tests.test_hub_department import _TestHubDeptConfig
@@ -387,6 +388,70 @@ class TestAthletesDelete(unittest.TestCase):
         self._login(raw)
         rv = self.client.post("/athletes/999999999/delete")
         self.assertEqual(rv.status_code, 404)
+
+
+class TestAthletesBanDelete(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(_TestHubDeptConfig)
+        self.app.config["TESTING"] = True
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset()
+        self.client = self.app.test_client()
+
+    def _login(self, token: str) -> None:
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = token
+
+    def _seed(self) -> tuple[str, int]:
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=934_001,
+                firstname="Org",
+                lastname="One",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            target = Athlete(
+                athlete_id=934_002,
+                firstname="Tar",
+                lastname="Get",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            db.session.add_all([organiser, target])
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+            return raw, int(target.athlete_id)
+
+    def test_post_with_ban_records_row_and_deletes_target(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.post(
+            f"/athletes/{target_pk}/delete",
+            data={"ban": "1"},
+            follow_redirects=False,
+        )
+        self.assertEqual(rv.status_code, 302)
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(Athlete, target_pk))
+            ban = Ban.query.one()
+            self.assertEqual(ban.banned_id_hash, banned_strava_id_hash(target_pk))
+            self.assertEqual(int(ban.banned_by_athlete_id), 934_001)
+
+    def test_plain_delete_does_not_create_ban_row(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.post(f"/athletes/{target_pk}/delete", follow_redirects=False)
+        self.assertEqual(rv.status_code, 302)
+        with self.app.app_context():
+            self.assertEqual(Ban.query.count(), 0)
 
 
 class TestAthletesResyncActivities(unittest.TestCase):

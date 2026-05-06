@@ -26,13 +26,14 @@ from ..competition_periods import (
 )
 from ..extensions import db
 from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
-from ..models import Activity, Athlete, Bonus, BrowserSession, Week, WeekScore
+from ..models import Activity, Athlete, Ban, Bonus, BrowserSession, Week, WeekScore
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..team_scoring import summaries_by_hub_and_department
 from ..utils import (
     athlete_display_name,
     athlete_hub_department_complete,
     athlete_role_label,
+    banned_strava_id_hash,
 )
 
 bp = Blueprint("main", __name__)
@@ -427,6 +428,17 @@ def athletes_delete(athlete_pk: int):
         or int(target.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
     ):
         abort(403)
+    want_ban = (request.form.get("ban") or "").strip() == "1"
+    if want_ban:
+        db.session.add(
+            Ban(
+                banned_id_hash=banned_strava_id_hash(int(target.athlete_id)),
+                created_at=datetime.now(timezone.utc),
+                banned_by_athlete_id=int(actor.athlete_id),
+            )
+        )
+    tid = int(target.athlete_id)
+    Ban.query.filter_by(banned_by_athlete_id=tid).delete(synchronize_session=False)
     db.session.delete(target)
     db.session.commit()
     return redirect(url_for("main.athletes"))
