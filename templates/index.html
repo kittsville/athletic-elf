@@ -28,7 +28,7 @@
         {% endif %}
       </p>
       <p class="team-points">
-        <strong>Your total points:</strong> {{ team_points }}
+        <strong>Your total points:</strong> {{ "%.2f"|format(team_points) }}
       </p>
       {% include "_activities_table.html" %}
       <p class="muted">

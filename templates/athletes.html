@@ -46,7 +46,7 @@
         <td>{{ row.name }}</td>
         <td>{{ row.hub }}</td>
         <td>{{ row.department }}</td>
-        <td>{{ row.score }}</td>
+        <td>{{ "%.2f"|format(row.score) }}</td>
         <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser, row.is_active) }}</td>
         <td class="actions-cell">
           {% set can_manage_role = not (row.is_organiser or row.is_app_developer) %}

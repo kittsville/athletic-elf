@@ -22,7 +22,7 @@
       <tr>
         <td>{{ row.created_at|utc_time }}</td>
         <td>{{ row.name }}</td>
-        <td>{{ row.points }}</td>
+        <td>{{ "%.2f"|format(row.points) }}</td>
         <td>{{ row.target }}</td>
         <td title="Athlete ID: {{ row.awardee_athlete_id }}">{{ row.awardee_name }}</td>
         <td class="actions-cell">

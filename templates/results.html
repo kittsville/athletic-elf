@@ -49,7 +49,7 @@
           <td>{{ row.firstname or "—" }}</td>
           <td>{{ row.lastname or "—" }}</td>
           <td>{{ row.athlete_id }}</td>
-          <td>{{ row.points }}</td>
+          <td>{{ "%.2f"|format(row.points) }}</td>
         </tr>
       {% endfor %}
       </tbody>

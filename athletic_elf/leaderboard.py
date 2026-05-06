@@ -140,7 +140,7 @@ def leaderboard_sections() -> list[dict[str, object]]:
         out: list[dict[str, object]] = []
         for rank, (aid, d, pts) in enumerate(ranked[:10], start=1):
             if stat_key == "points":
-                stat_display = str(int(pts))
+                stat_display = f"{float(pts):.2f}"
             elif stat_key.endswith("_km"):
                 stat_display = f"{float(d[stat_key]):.1f} km"
             else:

@@ -16,7 +16,7 @@
       {% endif %}
     </p>
     <p class="team-points">
-      <strong>Total points:</strong> {{ team_points }}
+      <strong>Total points:</strong> {{ "%.2f"|format(team_points) }}
       <span class="muted">(top 80% athletes averaged for hub/department scores)</span>
     </p>
     {% include "_activities_table.html" %}
