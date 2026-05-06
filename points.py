@@ -58,20 +58,20 @@ TEAM_MIN_SIZE_FOR_SCORE = 5
 TEAM_TOP_FRACTION = 0.8
 
 
-def activities_total_points(activities):
+def activities_total_points(activities) -> float:
     """
-    Total integer points for a user's activities using distance (meters),
+    Total points (float) for a user's activities using distance (meters),
     moving_time (seconds), sport_type, and start_date (for easy-fitness daily cap).
 
     Distance-based categories (cycling, running, walking, swimming): distances are
-    summed within the category, then thresholds applied once (e.g. total cycling
-    meters // 5000).
+    summed within the category, then divided by the threshold (e.g. total cycling
+    meters / 5000), producing fractional points.
 
     Hard fitness: total moving time summed across hard-fitness activities, then
-    // 900 seconds per point.
+    divided by 900 seconds per point.
 
     Easy fitness: per calendar day (from start_date), total moving time summed,
-    points = min(total // 1800, 5).
+    points = min(total / 1800, 5).
 
     Activities without a recognized sport_type contribute 0.
     """
@@ -109,17 +109,17 @@ def activities_total_points(activities):
         elif st in _SCORE_HARD_FITNESS:
             sum_hard_time += mt
 
-    total = 0
-    total += int(sum_cycling // CYCLING_METERS_PER_POINT)
-    total += int(sum_ebike // EBIKE_METERS_PER_POINT)
-    total += int(sum_running // RUNNING_METERS_PER_POINT)
-    total += int(sum_walking // WALKING_METERS_PER_POINT)
-    total += int(sum_swim // SWIMMING_METERS_PER_POINT)
-    total += sum_hard_time // SECONDS_PER_HARD_FITNESS_POINT
+    total = 0.0
+    total += sum_cycling / CYCLING_METERS_PER_POINT
+    total += sum_ebike / EBIKE_METERS_PER_POINT
+    total += sum_running / RUNNING_METERS_PER_POINT
+    total += sum_walking / WALKING_METERS_PER_POINT
+    total += sum_swim / SWIMMING_METERS_PER_POINT
+    total += sum_hard_time / SECONDS_PER_HARD_FITNESS_POINT
 
     for _day, mt_day in easy_time_by_day.items():
         total += min(
-            mt_day // SECONDS_PER_EASY_FITNESS_POINT,
+            mt_day / SECONDS_PER_EASY_FITNESS_POINT,
             EASY_FITNESS_DAILY_CAP_POINTS,
         )
 
@@ -172,7 +172,7 @@ def discipline_totals_for_activities(activities):
     }
 
 
-def team_points(per_athlete_points: list[int]) -> float:
+def team_points(per_athlete_points: list[float]) -> float:
     """
     Score for a hub or department team from each member's total points.
 

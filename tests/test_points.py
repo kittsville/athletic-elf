@@ -53,9 +53,9 @@ class TestNoPoints(unittest.TestCase):
         acts = [_activity("", distance=10_000)]
         self.assertEqual(activities_total_points(acts), 0)
 
-    def test_below_threshold_single_activity(self):
+    def test_single_activity_fractional_points(self):
         acts = [_activity("Ride", distance=4999)]
-        self.assertEqual(activities_total_points(acts), 0)
+        self.assertAlmostEqual(activities_total_points(acts), 4999 / 5000)
 
     def test_hard_fitness_zero_moving_time(self):
         acts = [_activity("Workout", moving_time=0)]
@@ -98,9 +98,9 @@ class TestEbikeRow(unittest.TestCase):
         acts = [_activity("EMountainBikeRide", distance=20_000)]
         self.assertEqual(activities_total_points(acts), 2)
 
-    def test_ebike_below_10km_zero_points(self):
-        acts = [_activity("EBikeRide", distance=9999)]
-        self.assertEqual(activities_total_points(acts), 0)
+    def test_ebike_below_10km_fractional_points(self):
+        acts = [_activity("EBikeRide", distance=5000)]
+        self.assertAlmostEqual(activities_total_points(acts), 0.5)
 
     def test_two_ebike_activities_sum_distance_bucket(self):
         acts = [
@@ -110,12 +110,12 @@ class TestEbikeRow(unittest.TestCase):
         self.assertEqual(activities_total_points(acts), 1)
 
     def test_ebike_and_cycling_separate_point_buckets(self):
-        # 5 km human-powered = 1 pt; 5 km e-bike = 0 (needs 10 km)
+        # 5 km human-powered = 1 pt; 5 km e-bike = 0.5 pt (separate buckets)
         acts = [
             _activity("Ride", distance=5000),
             _activity("EBikeRide", distance=5000),
         ]
-        self.assertEqual(activities_total_points(acts), 1)
+        self.assertAlmostEqual(activities_total_points(acts), 1.5)
 
     def test_discipline_cycle_km_includes_ebike(self):
         acts = [
@@ -201,9 +201,10 @@ class TestHardFitnessRow(unittest.TestCase):
         acts = [_activity("Crossfit", moving_time=30 * 60)]
         self.assertEqual(activities_total_points(acts), 2)
 
-    def test_hiit_14_minutes_no_point(self):
-        acts = [_activity("HighIntensityIntervalTraining", moving_time=14 * 60)]
-        self.assertEqual(activities_total_points(acts), 0)
+    def test_hiit_partial_time_fractional_points(self):
+        # 450 s = half the 900 s threshold → 0.5 pts
+        acts = [_activity("HighIntensityIntervalTraining", moving_time=450)]
+        self.assertAlmostEqual(activities_total_points(acts), 0.5)
 
     def test_pilates_without_start_date_still_scores(self):
         acts = [_activity("Pilates", moving_time=15 * 60, start_date=None)]
@@ -255,19 +256,14 @@ class TestEasyFitnessRow(unittest.TestCase):
 class TestAccumulationAcrossActivities(unittest.TestCase):
     """Multiple activities / sports summing to thresholds."""
 
-    def test_multiple_activities_combined_still_below_threshold_zero_points(self):
+    def test_fractional_points_accumulate_across_activities(self):
         acts = [
-            _activity("Ride", distance=2000),
-            _activity("Ride", distance=2000),
-            _activity("Run", distance=400),
-            _activity("Run", distance=400),
-            _activity("Workout", moving_time=7 * 60),
-            _activity("Workout", moving_time=7 * 60),
-            _activity("Yoga", moving_time=10 * 60, start_date=_D1),
-            _activity("Yoga", moving_time=10 * 60, start_date=_D1),
+            _activity("Ride", distance=2500),  # 0.5 cycling pts
+            _activity("Run", distance=800),  # 0.5 run pts
+            _activity("Workout", moving_time=450),  # 0.5 hard-fitness pts
+            _activity("Yoga", moving_time=900, start_date=_D1),  # 0.5 easy pts
         ]
-        # 4 km bike, 800 m run, 14 min hard, 20 min easy same day — each bucket < 1 pt
-        self.assertEqual(activities_total_points(acts), 0)
+        self.assertAlmostEqual(activities_total_points(acts), 2.0)
 
     def test_cycling_two_rides_sum_to_5km(self):
         acts = [
