@@ -62,7 +62,8 @@ def sync_activities_since_competition_start(athlete_id: int) -> int:
     page = 1
 
     while True:
-        maybe_refresh_athlete_token(athlete)
+        if maybe_refresh_athlete_token(athlete):
+            db.session.commit()
         r = http_client.get(
             url,
             params={
@@ -73,6 +74,7 @@ def sync_activities_since_competition_start(athlete_id: int) -> int:
             headers={"Authorization": f"Bearer {athlete.access_token}"},
             timeout=60,
         )
+        current_app.logger.info("Strava API status: %s", r.status_code)
         r.raise_for_status()
         batch = r.json()
         if not batch:
@@ -194,11 +196,11 @@ def ensure_push_subscription():
     return new_id
 
 
-def maybe_refresh_athlete_token(athlete: Athlete) -> None:
+def maybe_refresh_athlete_token(athlete: Athlete) -> bool:
     cfg = current_app.config
     now = int(datetime.now(timezone.utc).timestamp())
     if now < athlete.expires_at - 300:
-        return
+        return False
     current_app.logger.info(
         "Refreshing Strava token for athlete_id=%s", athlete.athlete_id
     )
@@ -217,6 +219,7 @@ def maybe_refresh_athlete_token(athlete: Athlete) -> None:
     if data.get("refresh_token"):
         athlete.refresh_token = data["refresh_token"]
     athlete.expires_at = data["expires_at"]
+    return True
 
 
 def process_activities(limit: int):
