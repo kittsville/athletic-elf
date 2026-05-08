@@ -199,6 +199,9 @@ def maybe_refresh_athlete_token(athlete: Athlete) -> None:
     now = int(datetime.now(timezone.utc).timestamp())
     if now < athlete.expires_at - 300:
         return
+    current_app.logger.info(
+        "Refreshing Strava token for athlete_id=%s", athlete.athlete_id
+    )
     r = http_client.post(
         cfg["STRAVA_OAUTH_TOKEN"],
         data={
