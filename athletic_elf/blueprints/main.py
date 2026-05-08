@@ -384,6 +384,22 @@ def athlete_activities(athlete_id: int):
     )
 
 
+@bp.post("/athletes/<int:athlete_id>/activities/<int:activity_pk>/delete")
+def athlete_activity_delete(athlete_id: int, activity_pk: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    target = db.session.get(Athlete, athlete_id)
+    if target is None:
+        abort(404)
+    activity = db.session.get(Activity, activity_pk)
+    if activity is None or int(activity.athlete_id) != int(athlete_id):
+        abort(404)
+    db.session.delete(activity)
+    db.session.commit()
+    return redirect(url_for("main.athlete_activities", athlete_id=athlete_id))
+
+
 @bp.post("/athletes/<int:athlete_pk>/make-organiser")
 def athletes_make_organiser(athlete_pk: int):
     actor = g.current_athlete

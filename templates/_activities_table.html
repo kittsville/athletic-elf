@@ -1,4 +1,5 @@
 {% if activities %}
+  {% set show_activity_actions = show_activity_actions|default(false) %}
   <div class="table-scroll">
   <table class="activities">
     <thead>
@@ -8,6 +9,9 @@
         <th>Distance</th>
         <th>Moving time (min)</th>
         <th>Activity</th>
+        {% if show_activity_actions %}
+          <th>Actions</th>
+        {% endif %}
       </tr>
     </thead>
     <tbody>
@@ -32,6 +36,24 @@
           <td>
             <a href="https://www.strava.com/activities/{{ a.activity_id }}" target="_blank" rel="noopener">View on Strava</a>
           </td>
+          {% if show_activity_actions %}
+            <td class="actions-cell">
+              <form
+                method="post"
+                action="{{ url_for('main.athlete_activity_delete', athlete_id=viewed_athlete_id, activity_pk=a.id) }}"
+                onsubmit="return confirm('Delete this activity? It may reappear after a re-sync.');"
+              >
+                <button
+                  type="submit"
+                  class="btn"
+                  aria-label="Delete activity"
+                  title="Delete activity"
+                >
+                  <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                </button>
+              </form>
+            </td>
+          {% endif %}
         </tr>
       {% endfor %}
     </tbody>

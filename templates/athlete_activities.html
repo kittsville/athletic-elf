@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Athlete {{ viewed_athlete_id }}{% endblock %}
+{% block extra_head %}
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+/>
+{% endblock %}
 {% block content %}
   <p class="athlete-activities-back"><a href="{{ url_for('main.athletes') }}">← All athletes</a></p>
   <h1>Activities — {{ viewed_name }}</h1>
@@ -15,10 +23,14 @@
         All activities listed below are from the competition start onward.
       {% endif %}
     </p>
+    <p>
+      Strava is a the source of truth. If you delete an activity then re-sync the athlete, or the athlete updates the activity, then it will reappear here.
+    </p>
     <p class="team-points">
       <strong>Total points:</strong> {{ "%.2f"|format(team_points) }}
       <span class="muted">(top 80% athletes averaged for hub/department scores)</span>
     </p>
+    {% set show_activity_actions = true %}
     {% include "_activities_table.html" %}
   </section>
 {% endblock %}
