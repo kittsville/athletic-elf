@@ -25,6 +25,8 @@ _TOKEN_PAYLOAD = {
     "athlete": {"id": 424242, "firstname": "Sam", "lastname": "River"},
 }
 
+_FULL_OAUTH_SCOPE = "read,activity:read,profile:read_all"
+
 
 class TestOAuthCallback(unittest.TestCase):
     def setUp(self):
@@ -68,7 +70,11 @@ class TestOAuthCallback(unittest.TestCase):
 
         rv = client.get(
             "/oauth/callback",
-            query_string={"code": "auth-code", "state": "st"},
+            query_string={
+                "code": "auth-code",
+                "state": "st",
+                "scope": _FULL_OAUTH_SCOPE,
+            },
         )
         self.assertEqual(rv.status_code, 403)
         self.assertIn(b"disabled", rv.data.lower())
@@ -104,7 +110,11 @@ class TestOAuthCallback(unittest.TestCase):
 
         rv = client.get(
             "/oauth/callback",
-            query_string={"code": "auth-code", "state": "st"},
+            query_string={
+                "code": "auth-code",
+                "state": "st",
+                "scope": _FULL_OAUTH_SCOPE,
+            },
             follow_redirects=False,
         )
         self.assertEqual(rv.status_code, 302)
@@ -124,7 +134,11 @@ class TestOAuthCallback(unittest.TestCase):
 
         rv = client.get(
             "/oauth/callback",
-            query_string={"code": "auth-code", "state": "st"},
+            query_string={
+                "code": "auth-code",
+                "state": "st",
+                "scope": _FULL_OAUTH_SCOPE,
+            },
             follow_redirects=False,
         )
         self.assertEqual(rv.status_code, 302)
@@ -165,13 +179,60 @@ class TestOAuthCallback(unittest.TestCase):
 
         rv = client.get(
             "/oauth/callback",
-            query_string={"code": "auth-code", "state": "st"},
+            query_string={
+                "code": "auth-code",
+                "state": "st",
+                "scope": _FULL_OAUTH_SCOPE,
+            },
         )
         self.assertEqual(rv.status_code, 403)
         self.assertIn(b"not allowed", rv.data.lower())
 
         with app.app_context():
             self.assertIsNone(Athlete.query.filter_by(athlete_id=424242).first())
+
+    def test_insufficient_scope_returns_400_without_token_exchange(self):
+        app = create_app(_OAuthCallbackConfig)
+        app.config["TESTING"] = True
+        client = app.test_client()
+
+        with client.session_transaction() as sess:
+            sess["oauth_state"] = "st"
+
+        rv = client.get(
+            "/oauth/callback",
+            query_string={
+                "code": "auth-code",
+                "state": "st",
+                "scope": "read,activity:read",
+            },
+        )
+        self.assertEqual(rv.status_code, 400)
+        self.assertEqual(
+            rv.get_data(as_text=True),
+            "OAuth error: permissions not granted. Please leave all the checkboxes checked otherwise the app can't read your activities!",
+        )
+        self.mock_post.assert_not_called()
+
+    def test_scope_order_in_callback_does_not_matter(self):
+        app = create_app(_OAuthCallbackConfig)
+        app.config["TESTING"] = True
+        client = app.test_client()
+
+        with client.session_transaction() as sess:
+            sess["oauth_state"] = "st"
+
+        rv = client.get(
+            "/oauth/callback",
+            query_string={
+                "code": "auth-code",
+                "state": "st",
+                "scope": "profile:read_all,read,activity:read",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(rv.status_code, 302)
+        self.mock_post.assert_called_once()
 
 
 if __name__ == "__main__":

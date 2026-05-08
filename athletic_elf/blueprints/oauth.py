@@ -7,6 +7,7 @@ import requests as http_client
 from flask import Blueprint, current_app, redirect, request, session, url_for
 
 from ..background import schedule_initial_activity_sync
+from ..config import parse_oauth_scopes_csv
 from ..extensions import db
 from ..models import Athlete, Ban
 from ..utils import banned_strava_id_hash
@@ -15,6 +16,17 @@ from ..strava_service import ensure_push_subscription
 from ..utils import athlete_hub_department_complete, oauth_redirect_uri
 
 bp = Blueprint("oauth", __name__)
+
+
+def _granted_oauth_scopes_sufficient(
+    scope_param: str | None, required: frozenset[str]
+) -> bool:
+    if not required:
+        return False
+    if not scope_param:
+        return False
+    granted = parse_oauth_scopes_csv(scope_param)
+    return required <= granted
 
 
 @bp.get("/oauth/start")
@@ -56,6 +68,12 @@ def oauth_callback():
     if request.args.get("state") != session.get("oauth_state"):
         return "Invalid OAuth state", 400
     session.pop("oauth_state", None)
+    required_scopes = parse_oauth_scopes_csv(cfg["OAUTH_SCOPES"])
+    if not _granted_oauth_scopes_sufficient(request.args.get("scope"), required_scopes):
+        return (
+            "OAuth error: permissions not granted. Please leave all the checkboxes checked otherwise the app can't read your activities!",
+            400,
+        )
     code = request.args.get("code")
     if not code:
         return "Missing authorization code", 400

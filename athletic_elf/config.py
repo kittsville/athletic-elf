@@ -27,6 +27,13 @@ def parse_comma_options(raw: str | None, default: str) -> tuple[str, ...]:
     return tuple(p.strip() for p in s.split(",") if p.strip())
 
 
+def parse_oauth_scopes_csv(raw: str | None) -> frozenset[str]:
+    """Comma-separated Strava OAuth scopes (authorize `scope` param or callback `scope`)."""
+    if not raw:
+        return frozenset()
+    return frozenset(p.strip() for p in raw.split(",") if p.strip())
+
+
 def parse_datetime_utc(iso_value: str | None) -> datetime | None:
     """
     Parse ISO 8601 datetime or date-only string into an aware UTC datetime.
