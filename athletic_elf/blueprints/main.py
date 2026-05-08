@@ -26,7 +26,17 @@ from ..competition_periods import (
 )
 from ..extensions import db
 from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
-from ..models import Activity, Athlete, Ban, Bonus, BrowserSession, Week, WeekScore
+from ..models import (
+    AUDIT_TYPE_ACTIVITY_RESYNC_TRIGGERED,
+    Activity,
+    Athlete,
+    AuditItem,
+    Ban,
+    Bonus,
+    BrowserSession,
+    Week,
+    WeekScore,
+)
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
 from ..team_scoring import summaries_by_hub_and_department
 from ..utils import (
@@ -470,6 +480,13 @@ def athletes_resync_activities(athlete_pk: int):
         abort(404)
     Activity.query.filter_by(athlete_id=target.athlete_id).delete(
         synchronize_session=False
+    )
+    db.session.add(
+        AuditItem(
+            audit_type=AUDIT_TYPE_ACTIVITY_RESYNC_TRIGGERED,
+            source=str(actor.athlete_id),
+            target=str(target.athlete_id),
+        )
     )
     db.session.commit()
     schedule_initial_activity_sync(

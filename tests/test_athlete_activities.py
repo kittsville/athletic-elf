@@ -6,7 +6,13 @@ from unittest.mock import patch
 
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
-from athletic_elf.models import Activity, Athlete, Ban
+from athletic_elf.models import (
+    AUDIT_TYPE_ACTIVITY_RESYNC_TRIGGERED,
+    Activity,
+    Athlete,
+    AuditItem,
+    Ban,
+)
 from athletic_elf.utils import banned_strava_id_hash
 from athletic_elf.session import BROWSER_TOKEN_SESSION_KEY, create_browser_session
 
@@ -525,6 +531,12 @@ class TestAthletesResyncActivities(unittest.TestCase):
                 Activity.query.filter_by(athlete_id=target_pk).count(),
                 0,
             )
+            audit = AuditItem.query.filter_by(
+                audit_type=AUDIT_TYPE_ACTIVITY_RESYNC_TRIGGERED,
+                source="932001",
+                target=str(target_pk),
+            ).one()
+            self.assertEqual(audit.context, "")
 
     def test_resync_forbidden_for_non_organiser(self):
         token, target_pk = self._seed_organiser_target_and_activity()

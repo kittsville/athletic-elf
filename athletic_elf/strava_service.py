@@ -6,7 +6,12 @@ import requests as http_client
 from flask import current_app
 
 from .extensions import db
-from .models import Activity, Athlete
+from .models import (
+    AUDIT_TYPE_STRAVA_ACTIVITIES_PULLED,
+    Activity,
+    Athlete,
+    AuditItem,
+)
 from .utils import parse_strava_datetime, strava_webhook_callback_url
 
 
@@ -104,6 +109,15 @@ def sync_activities_since_competition_start(athlete_id: int) -> int:
             break
         page += 1
 
+    db.session.add(
+        AuditItem(
+            audit_type=AUDIT_TYPE_STRAVA_ACTIVITIES_PULLED,
+            source="app",
+            target=str(athlete_id),
+            context={"activities": total_upserted},
+        )
+    )
+    db.session.commit()
     return total_upserted
 
 

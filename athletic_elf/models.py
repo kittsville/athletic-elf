@@ -9,6 +9,31 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+AUDIT_TYPE_ACTIVITY_RESYNC_TRIGGERED = "athlete.activity_resync_triggered"
+AUDIT_TYPE_STRAVA_ACTIVITIES_PULLED = "strava.activities_pulled"
+
+
+class AuditItem(db.Model):
+    """Append-only audit trail for Strava and in-app athlete actions."""
+
+    __tablename__ = "audit_item"
+
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        index=True,
+    )
+    audit_type = db.Column("type", db.String(255), nullable=False, index=True)
+    source = db.Column(db.String(255), nullable=False)
+    target = db.Column(db.String(255), nullable=False)
+    context = db.Column(db.JSON, nullable=False, default=lambda: "")
+
+    def __repr__(self) -> str:
+        return f"<AuditItem {self.id} {self.audit_type!r}>"
+
+
 class Athlete(db.Model):
     __tablename__ = "athlete"
     athlete_id = db.Column(db.BigInteger, primary_key=True)
