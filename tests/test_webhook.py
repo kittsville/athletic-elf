@@ -8,7 +8,13 @@ from datetime import datetime, timezone
 from athletic_elf.config import Config
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
-from athletic_elf.models import Activity
+from athletic_elf.models import (
+    AUDIT_TYPE_WEBHOOK_ACTIVITY_CREATE,
+    AUDIT_TYPE_WEBHOOK_ACTIVITY_DELETE,
+    AUDIT_TYPE_WEBHOOK_ACTIVITY_UPDATE,
+    Activity,
+    AuditItem,
+)
 from athletic_elf.utils import strava_webhook_callback_url
 
 
@@ -84,6 +90,13 @@ class TestWebhookRoutes(unittest.TestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.data, b"EVENT_RECEIVED")
+        with self.app.app_context():
+            audit = AuditItem.query.filter_by(
+                audit_type=AUDIT_TYPE_WEBHOOK_ACTIVITY_CREATE,
+                source="strava",
+                target="999001",
+            ).one()
+            self.assertEqual(audit.context, {"athlete_id": 888001})
 
     def test_post_returns_404_for_wrong_path(self):
         r = self.client.post("/webhook/other", json={"object_type": "activity"})
@@ -122,6 +135,48 @@ class TestWebhookRoutes(unittest.TestCase):
             self.assertIsNone(again.sport_type)
             self.assertIsNone(again.start_date)
             self.assertIsNone(again.moving_time)
+            audit = AuditItem.query.filter_by(
+                audit_type=AUDIT_TYPE_WEBHOOK_ACTIVITY_UPDATE,
+                source="strava",
+                target="777001",
+            ).one()
+            self.assertEqual(audit.context, {"athlete_id": 888001})
+
+    def test_activity_delete_logs_audit(self):
+        with self.app.app_context():
+            db.drop_all()
+            db.create_all()
+            db.session.add(
+                Activity(
+                    activity_id=555_001,
+                    athlete_id=444_001,
+                    distance=1000.0,
+                    sport_type="Run",
+                    start_date=datetime(2025, 6, 1, 12, 0, 0, tzinfo=timezone.utc),
+                    moving_time=300,
+                )
+            )
+            db.session.commit()
+
+        body = {
+            "aspect_type": "delete",
+            "object_type": "activity",
+            "object_id": 555_001,
+            "owner_id": 444_001,
+        }
+        r = self.client.post("/webhook/my-verify-secret", json=body)
+        self.assertEqual(r.status_code, 200)
+
+        with self.app.app_context():
+            self.assertIsNone(
+                Activity.query.filter_by(activity_id=555_001).first(),
+            )
+            audit = AuditItem.query.filter_by(
+                audit_type=AUDIT_TYPE_WEBHOOK_ACTIVITY_DELETE,
+                source="strava",
+                target="555001",
+            ).one()
+            self.assertEqual(audit.context, {"athlete_id": 444001})
 
 
 class TestCreateAppRequiresVerifyToken(unittest.TestCase):

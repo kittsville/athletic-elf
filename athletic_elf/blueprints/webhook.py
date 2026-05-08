@@ -5,7 +5,14 @@ import secrets
 from flask import Blueprint, abort, current_app, jsonify, request
 
 from ..extensions import db
-from ..models import Activity, Athlete
+from ..models import (
+    AUDIT_TYPE_WEBHOOK_ACTIVITY_CREATE,
+    AUDIT_TYPE_WEBHOOK_ACTIVITY_DELETE,
+    AUDIT_TYPE_WEBHOOK_ACTIVITY_UPDATE,
+    Activity,
+    Athlete,
+    AuditItem,
+)
 
 bp = Blueprint("webhook", __name__)
 
@@ -82,9 +89,32 @@ def webhook_post(webhook_verify_token: str):
                 )
             else:
                 db.session.add(Activity(activity_id=activity_id, athlete_id=owner_id))
+                db.session.add(
+                    AuditItem(
+                        audit_type=AUDIT_TYPE_WEBHOOK_ACTIVITY_CREATE,
+                        source="strava",
+                        target=str(activity_id),
+                        context={"athlete_id": int(owner_id)},
+                    )
+                )
                 db.session.commit()
         elif aspect_type == "delete":
+            existing = Activity.query.filter_by(activity_id=activity_id).first()
+            athlete_for_audit = (
+                int(owner_id)
+                if owner_id is not None
+                else (int(existing.athlete_id) if existing is not None else None)
+            )
             Activity.query.filter_by(activity_id=activity_id).delete()
+            if athlete_for_audit is not None:
+                db.session.add(
+                    AuditItem(
+                        audit_type=AUDIT_TYPE_WEBHOOK_ACTIVITY_DELETE,
+                        source="strava",
+                        target=str(activity_id),
+                        context={"athlete_id": athlete_for_audit},
+                    )
+                )
             db.session.commit()
         elif aspect_type == "update":
             row = Activity.query.filter_by(activity_id=activity_id).first()
@@ -94,6 +124,14 @@ def webhook_post(webhook_verify_token: str):
                 row.sport_type = None
                 row.start_date = None
                 row.moving_time = None
+                db.session.add(
+                    AuditItem(
+                        audit_type=AUDIT_TYPE_WEBHOOK_ACTIVITY_UPDATE,
+                        source="strava",
+                        target=str(activity_id),
+                        context={"athlete_id": int(row.athlete_id)},
+                    )
+                )
                 db.session.commit()
 
     return "EVENT_RECEIVED", 200

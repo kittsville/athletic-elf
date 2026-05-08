@@ -11,6 +11,9 @@ def _utc_now() -> datetime:
 
 AUDIT_TYPE_ACTIVITY_RESYNC_TRIGGERED = "athlete.activity_resync_triggered"
 AUDIT_TYPE_STRAVA_ACTIVITIES_PULLED = "strava.activities_pulled"
+AUDIT_TYPE_WEBHOOK_ACTIVITY_CREATE = "strava.webhook.activity_create"
+AUDIT_TYPE_WEBHOOK_ACTIVITY_UPDATE = "strava.webhook.activity_update"
+AUDIT_TYPE_WEBHOOK_ACTIVITY_DELETE = "strava.webhook.activity_delete"
 
 
 class AuditItem(db.Model):
