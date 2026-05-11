@@ -190,6 +190,17 @@ time {
 }
 
 /* --- Home (index) --- */
+.strava-connect a {
+  display: inline-block;
+  line-height: 0;
+}
+
+.strava-connect img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
 .account-details {
   margin: 1rem 0;
 }
