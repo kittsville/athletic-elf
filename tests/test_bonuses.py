@@ -36,7 +36,7 @@ class TestBonusHubDepartmentTotals(unittest.TestCase):
                 Bonus(
                     created_at=datetime.now(timezone.utc),
                     name="Photo of the week",
-                    points=7,
+                    points=7.5,
                     target="North Hub",
                     athlete_id=910_000,
                 )
@@ -45,7 +45,7 @@ class TestBonusHubDepartmentTotals(unittest.TestCase):
                 Bonus(
                     created_at=datetime.now(timezone.utc),
                     name="Dept challenge",
-                    points=3,
+                    points=3.25,
                     target="Engineering",
                     athlete_id=910_000,
                 )
@@ -61,8 +61,8 @@ class TestBonusHubDepartmentTotals(unittest.TestCase):
             north = next(r for r in hub_rows if r["name"] == "North Hub")
             eng = next(r for r in dept_rows if r["name"] == "Engineering")
             # team_points([10,10,10,10,10]) = mean(top 4) = 10
-            self.assertAlmostEqual(north["points"], 17.0)
-            self.assertAlmostEqual(eng["points"], 13.0)
+            self.assertAlmostEqual(north["points"], 17.5)
+            self.assertAlmostEqual(eng["points"], 13.25)
 
     def test_inactive_athletes_excluded_from_hub_and_department_team_scores(self):
         with self.app.app_context():
@@ -132,6 +132,35 @@ class TestBonusesPage(unittest.TestCase):
         rv = self.client.get("/bonuses")
         self.assertEqual(rv.status_code, 403)
 
+    def test_bonus_rejects_invalid_points(self):
+        _, token = self._make_user(organiser=True)
+        self._login(token)
+        rv = self.client.post(
+            "/bonuses",
+            data={
+                "name": "Bad",
+                "points": "not-a-number",
+                "target": "hub|North Hub",
+            },
+        )
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn(b"Points must be a number", rv.data)
+        with self.app.app_context():
+            self.assertIsNone(Bonus.query.first())
+
+        rv = self.client.post(
+            "/bonuses",
+            data={
+                "name": "Bad",
+                "points": "0",
+                "target": "hub|North Hub",
+            },
+        )
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn(b"greater than 0", rv.data)
+        with self.app.app_context():
+            self.assertIsNone(Bonus.query.first())
+
     def test_organiser_can_add_and_delete_bonus(self):
         _, token = self._make_user(organiser=True)
         self._login(token)
@@ -143,7 +172,7 @@ class TestBonusesPage(unittest.TestCase):
             "/bonuses",
             data={
                 "name": "Weekly photo",
-                "points": "5",
+                "points": "1.5",
                 "target": "hub|North Hub",
             },
             follow_redirects=False,
@@ -152,7 +181,7 @@ class TestBonusesPage(unittest.TestCase):
         with self.app.app_context():
             b = Bonus.query.one()
             self.assertEqual(b.name, "Weekly photo")
-            self.assertEqual(b.points, 5)
+            self.assertAlmostEqual(b.points, 1.5)
             self.assertEqual(b.target, "North Hub")
             self.assertEqual(int(b.athlete_id), 920_001)
 

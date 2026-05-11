@@ -148,7 +148,7 @@ class Bonus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False)
     name = db.Column(db.String(255), nullable=False)
-    points = db.Column(db.Integer, nullable=False)
+    points = db.Column(db.Float, nullable=False)
     target = db.Column(db.String(255), nullable=False, index=True)
     athlete_id = db.Column(
         db.BigInteger,

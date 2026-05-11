@@ -1,5 +1,6 @@
 """HTML pages, logout, and data deletion."""
 
+import math
 import secrets
 from datetime import datetime, timezone
 
@@ -543,12 +544,12 @@ def bonuses():
             error = "Name is required and must be at most 255 characters."
         else:
             try:
-                points_val = int(points_raw)
+                points_val = float(points_raw)
             except ValueError:
-                error = "Points must be an integer."
+                error = "Points must be a number."
             else:
-                if points_val < 1:
-                    error = "Points must be at least 1."
+                if not math.isfinite(points_val) or points_val <= 0:
+                    error = "Points must be a finite number greater than 0."
                 elif kind == "hub" and target_value in hub_set:
                     resolved_target = target_value
                 elif kind == "department" and target_value in dept_set:

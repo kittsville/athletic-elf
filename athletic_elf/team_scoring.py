@@ -48,14 +48,14 @@ def summaries_by_hub_and_department(
     hub_member_points, dept_member_points = hub_and_department_member_point_lists(
         points_by, hub_options, department_options
     )
-    hub_bonus: defaultdict[str, int] = defaultdict(int)
-    dept_bonus: defaultdict[str, int] = defaultdict(int)
+    hub_bonus: defaultdict[str, float] = defaultdict(float)
+    dept_bonus: defaultdict[str, float] = defaultdict(float)
     for b in Bonus.query.all():
         t = b.target.strip()
         if t in hub_set:
-            hub_bonus[t] += int(b.points)
+            hub_bonus[t] += float(b.points)
         elif t in dept_set:
-            dept_bonus[t] += int(b.points)
+            dept_bonus[t] += float(b.points)
 
     hub_rows = [
         {
