@@ -53,7 +53,7 @@ _ATHLETES_SORTABLE = frozenset({"name", "hub", "department", "score", "role"})
 _ATHLETES_FILTERS = frozenset({"all", "hub", "department"})
 
 
-def _points_by_athlete_strava_id() -> dict[int, int]:
+def _points_by_athlete_strava_id() -> dict[int, float]:
     """Total points per Strava athlete id (activities with a start_date only)."""
     by_athlete = activities_by_athlete_scored()
     return {aid: activities_total_points(acts) for aid, acts in by_athlete.items()}
@@ -353,7 +353,7 @@ def athletes():
             if sort_col == "department":
                 return (str(row["department"]).casefold(), aid)
             if sort_col == "score":
-                return (int(row["score"]), aid)
+                return (float(row["score"]), aid)
             label = athlete_role_label(
                 bool(row["is_app_developer"]),
                 bool(row["is_organiser"]),

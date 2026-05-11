@@ -878,6 +878,87 @@ class TestAthletesIndexPage(unittest.TestCase):
         self.assertLess(pos_amy, pos_bob)
         self.assertLess(pos_bob, pos_zed)
 
+    def test_sort_score_asc_orders_fractional_scores(self):
+        """Scores are floats; sorting must not truncate to int (tie-break by id only)."""
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=940_101,
+                firstname="Zed",
+                lastname="Organiser",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            half = Athlete(
+                athlete_id=940_102,
+                firstname="Half",
+                lastname="Points",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            zero = Athlete(
+                athlete_id=940_103,
+                firstname="Zero",
+                lastname="Points",
+                access_token="at3",
+                refresh_token="rt3",
+                expires_at=2_000_000_000,
+                hub="East Hub",
+                department="Marketing",
+            )
+            full = Athlete(
+                athlete_id=940_104,
+                firstname="Full",
+                lastname="Points",
+                access_token="at4",
+                refresh_token="rt4",
+                expires_at=2_000_000_000,
+                hub="West Hub",
+                department="Operations",
+            )
+            db.session.add_all([organiser, half, zero, full])
+            db.session.flush()
+            start = datetime(2026, 1, 10, 12, 0, tzinfo=timezone.utc)
+            db.session.add_all(
+                [
+                    Activity(
+                        activity_id=77_910,
+                        athlete_id=940_102,
+                        distance=800.0,
+                        sport_type="Run",
+                        start_date=start,
+                        moving_time=600,
+                    ),
+                    Activity(
+                        activity_id=77_911,
+                        athlete_id=940_104,
+                        distance=1600.0,
+                        sport_type="Run",
+                        start_date=start,
+                        moving_time=1200,
+                    ),
+                ]
+            )
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.get("/athletes?sort=score&order=asc")
+        self.assertEqual(rv.status_code, 200)
+        text = rv.get_data(as_text=True)
+        pos_zed = text.find("Zed Organiser")
+        pos_zero = text.find("Zero Points")
+        pos_half = text.find("Half Points")
+        pos_full = text.find("Full Points")
+        self.assertLess(pos_zed, pos_zero)
+        self.assertLess(pos_zero, pos_half)
+        self.assertLess(pos_half, pos_full)
+
     def test_filter_hub_shows_only_same_hub(self):
         token = self._seed_sorted_table()
         self._login(token)
