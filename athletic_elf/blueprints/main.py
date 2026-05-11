@@ -99,6 +99,7 @@ def index():
     activities = _activities_for_athlete(strava_id)
     scored = [a for a in activities if a.start_date is not None]
     team_points = activities_total_points(scored)
+    activity_points = {a.id: activities_total_points([a]) for a in scored}
     hub_display = (athlete.hub or "").strip() or "—"
     department_display = (athlete.department or "").strip() or "—"
     return render_template(
@@ -113,6 +114,7 @@ def index():
         is_active=bool(athlete.is_active),
         activities=activities,
         team_points=team_points,
+        activity_points=activity_points,
     )
 
 
@@ -385,6 +387,7 @@ def athlete_activities(athlete_id: int):
     activities = _activities_for_athlete(athlete_id)
     scored = [a for a in activities if a.start_date is not None]
     team_points_val = activities_total_points(scored)
+    activity_points = {a.id: activities_total_points([a]) for a in scored}
     viewed_name = athlete_display_name(target.firstname or "", target.lastname or "")
     return render_template(
         "athlete_activities.html",
@@ -392,6 +395,7 @@ def athlete_activities(athlete_id: int):
         viewed_name=viewed_name,
         activities=activities,
         team_points=team_points_val,
+        activity_points=activity_points,
     )
 
 

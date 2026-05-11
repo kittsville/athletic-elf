@@ -29,11 +29,13 @@
       </p>
       <p class="team-points">
         <strong>Your total points:</strong> {{ "%.2f"|format(team_points) }}
+        <span class="muted">
+          (Easy fitness has a daily cap. Top 80% athletes averaged for hub/department scores.)
+        </span>
       </p>
       {% include "_activities_table.html" %}
       <p class="muted">
         <strong>Note:</strong> Activities must be uploaded before each week ends to be counted in hub/department totals.
-        Only the top 80% of a hub/department's athletes are averaged for team scores.
       </p>
     </section>
   {% else %}

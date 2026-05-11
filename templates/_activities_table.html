@@ -8,6 +8,7 @@
         <th>Sport</th>
         <th>Distance</th>
         <th>Moving time (min)</th>
+        <th>Points</th>
         <th>Activity</th>
         {% if show_activity_actions %}
           <th>Actions</th>
@@ -33,6 +34,13 @@
             {% endif %}
           </td>
           <td>{{ format_moving_time(a.moving_time) }}</td>
+          <td>
+            {% if a.start_date %}
+              {{ "%.2f"|format((activity_points|default({})).get(a.id, 0)) }}
+            {% else %}
+              <span class="muted">—</span>
+            {% endif %}
+          </td>
           <td>
             <a href="https://www.strava.com/activities/{{ a.activity_id }}" target="_blank" rel="noopener">View on Strava</a>
           </td>

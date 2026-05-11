@@ -28,7 +28,9 @@
     </p>
     <p class="team-points">
       <strong>Total points:</strong> {{ "%.2f"|format(team_points) }}
-      <span class="muted">(top 80% athletes averaged for hub/department scores)</span>
+      <span class="muted">
+        (Easy fitness has a daily cap. Top 80% athletes averaged for hub/department scores.)
+      </span>
     </p>
     {% set show_activity_actions = true %}
     {% include "_activities_table.html" %}
