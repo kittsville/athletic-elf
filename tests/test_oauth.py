@@ -25,7 +25,7 @@ _TOKEN_PAYLOAD = {
     "athlete": {"id": 424242, "firstname": "Sam", "lastname": "River"},
 }
 
-_FULL_OAUTH_SCOPE = "read,activity:read,profile:read_all"
+_FULL_OAUTH_SCOPE = "read,activity:read_all,profile:read_all"
 
 
 class TestOAuthCallback(unittest.TestCase):
@@ -204,7 +204,7 @@ class TestOAuthCallback(unittest.TestCase):
             query_string={
                 "code": "auth-code",
                 "state": "st",
-                "scope": "read,activity:read",
+                "scope": "read,activity:read_all",
             },
         )
         self.assertEqual(rv.status_code, 400)
@@ -227,7 +227,7 @@ class TestOAuthCallback(unittest.TestCase):
             query_string={
                 "code": "auth-code",
                 "state": "st",
-                "scope": "profile:read_all,read,activity:read",
+                "scope": "profile:read_all,read,activity:read_all",
             },
             follow_redirects=False,
         )

@@ -125,7 +125,7 @@ CI also runs **`ruff format --check .`** (see the **`format`** job in that workf
 
 ### `GET /oauth/start`
 
-Starts the OAuth 2.0 flow: redirects the user to Strava to approve scopes (`read`, `activity:read`). After approval, Strava redirects to **`/oauth/callback`**.
+Starts the OAuth 2.0 flow: redirects the user to Strava to approve scopes (`read`, `activity:read_all`). After approval, Strava redirects to **`/oauth/callback`**.
 
 ### `GET /oauth/callback`
 
