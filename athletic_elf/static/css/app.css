@@ -409,9 +409,27 @@ time {
   margin-bottom: 2rem;
 }
 
-.period > h2 {
+.period-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.period-heading h2 {
   font-size: 1.1rem;
-  margin: 0 0 0.35rem 0;
+  margin: 0;
+}
+
+.period-heading form {
+  margin: 0;
+}
+
+.period-heading .btn {
+  font: inherit;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
 }
 
 .meta {

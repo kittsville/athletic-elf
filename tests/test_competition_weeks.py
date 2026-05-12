@@ -215,6 +215,26 @@ class TestOrganiserWeeksPage(unittest.TestCase):
             db.session.commit()
             return raw
 
+    def _make_app_developer(self) -> str:
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset({932_003})
+        with self.app.app_context():
+            a = Athlete(
+                athlete_id=932_003,
+                firstname="D",
+                lastname="ev",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=False,
+            )
+            db.session.add(a)
+            db.session.flush()
+            raw, _ = create_browser_session(int(a.athlete_id))
+            db.session.commit()
+            return raw
+
     def test_weeks_requires_role(self):
         with self.app.app_context():
             a = Athlete(
@@ -241,6 +261,104 @@ class TestOrganiserWeeksPage(unittest.TestCase):
         rv = self.client.get("/organiser/weeks")
         self.assertEqual(rv.status_code, 200)
         self.assertIn(b"Weekly Scores", rv.data)
+        self.assertNotIn(b"Recalculate scores", rv.data)
+
+    def test_app_developer_can_see_recalculate_button(self):
+        self._login(self._make_app_developer())
+        with self.app.app_context():
+            db.session.add(
+                Week(
+                    period_index=0,
+                    summarized_at=datetime(2026, 5, 11, tzinfo=timezone.utc),
+                )
+            )
+            db.session.commit()
+        rv = self.client.get("/organiser/weeks")
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn(b"Recalculate scores", rv.data)
+
+    def test_organiser_cannot_recalculate_week_scores(self):
+        self._login(self._make_organiser())
+        with self.app.app_context():
+            wk = Week(
+                period_index=0,
+                summarized_at=datetime(2026, 5, 11, tzinfo=timezone.utc),
+            )
+            db.session.add(wk)
+            db.session.commit()
+            week_id = wk.id
+
+        rv = self.client.post(f"/organiser/weeks/{week_id}/recalculate")
+        self.assertEqual(rv.status_code, 403)
+
+    def test_app_developer_can_recalculate_week_with_late_activities(self):
+        self._login(self._make_app_developer())
+        with self.app.app_context():
+            for i in range(5):
+                db.session.add(
+                    Athlete(
+                        athlete_id=932_100 + i,
+                        firstname="Late",
+                        lastname=str(i),
+                        access_token="at",
+                        refresh_token="rt",
+                        expires_at=2_000_000_000,
+                        hub="North Hub",
+                        department="Engineering",
+                    )
+                )
+            db.session.commit()
+            summarize_due_periods_loop(
+                self.app,
+                now=datetime(2026, 5, 11, tzinfo=timezone.utc),
+            )
+            db.session.commit()
+            wk = Week.query.filter_by(period_index=0).one()
+            self.assertEqual(
+                WeekScore.query.filter_by(
+                    week_id=wk.id,
+                    team_scope="hub",
+                    target="North Hub",
+                )
+                .one()
+                .points,
+                0.0,
+            )
+
+            for i in range(5):
+                db.session.add(
+                    Activity(
+                        activity_id=844_000 + i,
+                        athlete_id=932_100 + i,
+                        sport_type="Ride",
+                        distance=5000.0,
+                        start_date=datetime(2026, 5, 5, tzinfo=timezone.utc),
+                        moving_time=1800,
+                    )
+                )
+            db.session.commit()
+            week_id = wk.id
+
+        rv = self.client.post(
+            f"/organiser/weeks/{week_id}/recalculate",
+            follow_redirects=False,
+        )
+        self.assertEqual(rv.status_code, 302)
+        with self.app.app_context():
+            score = WeekScore.query.filter_by(
+                week_id=week_id,
+                team_scope="hub",
+                target="North Hub",
+            ).one()
+            self.assertGreater(score.points, 0.0)
+            self.assertEqual(
+                Activity.query.filter(
+                    Activity.activity_id >= 844_000,
+                    Activity.activity_id < 844_005,
+                    Activity.week_id == week_id,
+                ).count(),
+                5,
+            )
 
 
 class TestResultsPointsWithWeeklyConfig(unittest.TestCase):

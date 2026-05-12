@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from points import activities_total_points, team_points
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from .extensions import db
 from .models import Activity, Week, WeekScore
@@ -112,6 +112,48 @@ def activities_for_period_summarize(spec: PeriodSpec) -> list[Activity]:
     return q.all()
 
 
+def _points_by_athlete(activities: list[Activity]) -> dict[int, int]:
+    by_athlete: defaultdict[int, list[Activity]] = defaultdict(list)
+    for a in activities:
+        by_athlete[int(a.athlete_id)].append(a)
+    return {aid: activities_total_points(alist) for aid, alist in by_athlete.items()}
+
+
+def _replace_week_scores(
+    app, week: Week, points_by: dict[int, int], computed_at: datetime
+) -> None:
+    WeekScore.query.filter_by(week_id=week.id).delete(synchronize_session=False)
+
+    hubs = list(app.config["HUB_OPTIONS"])
+    departments = list(app.config["DEPARTMENT_OPTIONS"])
+    hub_members, dept_members = hub_and_department_member_point_lists(
+        points_by, hubs, departments
+    )
+
+    for h in hubs:
+        pts = float(team_points(hub_members[h]))
+        db.session.add(
+            WeekScore(
+                week_id=week.id,
+                target=h,
+                team_scope=SCOPE_HUB,
+                points=pts,
+                created_at=computed_at,
+            )
+        )
+    for d in departments:
+        pts = float(team_points(dept_members[d]))
+        db.session.add(
+            WeekScore(
+                week_id=week.id,
+                target=d,
+                team_scope=SCOPE_DEPARTMENT,
+                points=pts,
+                created_at=computed_at,
+            )
+        )
+
+
 def summarize_next_due_period(app, now: datetime | None = None) -> bool:
     """
     If the next period has ended and is not yet summarized, compute team scores,
@@ -128,51 +170,44 @@ def summarize_next_due_period(app, now: datetime | None = None) -> bool:
         return False
 
     acts = activities_for_period_summarize(spec)
-    by_athlete: defaultdict[int, list[Activity]] = defaultdict(list)
-    for a in acts:
-        by_athlete[int(a.athlete_id)].append(a)
-    points_by = {
-        aid: activities_total_points(alist) for aid, alist in by_athlete.items()
-    }
-
-    hubs = list(app.config["HUB_OPTIONS"])
-    departments = list(app.config["DEPARTMENT_OPTIONS"])
-    hub_members, dept_members = hub_and_department_member_point_lists(
-        points_by, hubs, departments
-    )
-
+    points_by = _points_by_athlete(acts)
     computed_at = now
     week_row = Week(period_index=spec.index, summarized_at=computed_at)
     db.session.add(week_row)
     db.session.flush()
 
-    for h in hubs:
-        pts = float(team_points(hub_members[h]))
-        db.session.add(
-            WeekScore(
-                week_id=week_row.id,
-                target=h,
-                team_scope=SCOPE_HUB,
-                points=pts,
-                created_at=computed_at,
-            )
-        )
-    for d in departments:
-        pts = float(team_points(dept_members[d]))
-        db.session.add(
-            WeekScore(
-                week_id=week_row.id,
-                target=d,
-                team_scope=SCOPE_DEPARTMENT,
-                points=pts,
-                created_at=computed_at,
-            )
-        )
+    _replace_week_scores(app, week_row, points_by, computed_at)
 
     for a in acts:
         a.week_id = week_row.id
 
     return True
+
+
+def activities_for_week_recalculation(spec: PeriodSpec, week: Week) -> list[Activity]:
+    q = Activity.query.filter(
+        or_(Activity.week_id.is_(None), Activity.week_id == week.id),
+        Activity.start_date.isnot(None),
+        Activity.start_date >= spec.eligible_lower,
+        Activity.start_date < spec.end_exclusive,
+    )
+    return q.all()
+
+
+def recalculate_week_scores(app, week: Week, now: datetime | None = None) -> int:
+    """Rebuild frozen scores for an existing week and attach eligible stragglers."""
+    if now is None:
+        now = datetime.now(timezone.utc)
+    spec = period_spec_for_index(app, int(week.period_index))
+    if spec is None:
+        raise ValueError("week period index is not in the current config")
+
+    acts = activities_for_week_recalculation(spec, week)
+    _replace_week_scores(app, week, _points_by_athlete(acts), now)
+    for a in acts:
+        a.week_id = week.id
+    week.summarized_at = now
+    return len(acts)
 
 
 def aggregates_frozen_team_scores(

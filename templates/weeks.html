@@ -9,7 +9,18 @@
   {% for block in sections %}
   {% set wk = block.week %}
   <section class="period" aria-labelledby="week-heading-{{ wk.id }}">
-    <h2 id="week-heading-{{ wk.id }}">Period {{ wk.period_index }}</h2>
+    <div class="period-heading">
+      <h2 id="week-heading-{{ wk.id }}">Period {{ wk.period_index }}</h2>
+      {% if can_recalculate_weeks %}
+      <form
+        method="post"
+        action="{{ url_for('main.week_recalculate', week_id=wk.id) }}"
+        onsubmit="return confirm('Recalculate scores for this period?');"
+      >
+        <button type="submit" class="btn">Recalculate scores</button>
+      </form>
+      {% endif %}
+    </div>
     {% if block.spec %}
     <p class="meta">Canonical window {{ block.spec.canonical_start|utc_time("%d %B %Y, %H:%M") }} &ndash; {{ block.spec.end_exclusive|utc_time("%d %B %Y, %H:%M") }} (end exclusive). Summarised at {{ block.computed_at|utc_time("%d %B %Y, %H:%M") }}.</p>
     {% else %}

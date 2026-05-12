@@ -172,6 +172,7 @@ def create_app(config_class: type = Config) -> Flask:
             "main.bonuses",
             "main.bonus_delete",
             "main.weeks",
+            "main.week_recalculate",
         }
     )
     endpoints_skip_session_lookup = frozenset(

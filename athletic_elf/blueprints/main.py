@@ -24,6 +24,7 @@ from ..competition_periods import (
     period_spec_for_index,
     points_by_athlete_competition_totals,
     points_by_athlete_for_results_table,
+    recalculate_week_scores,
 )
 from ..extensions import db
 from ..leaderboard import activities_by_athlete_scored, leaderboard_sections
@@ -64,6 +65,10 @@ def _can_perform_organiser_tasks(athlete: Athlete) -> bool:
         athlete.is_organiser
         or int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
     )
+
+
+def _can_perform_app_developer_tasks(athlete: Athlete) -> bool:
+    return int(athlete.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
 
 
 def _activities_for_athlete(athlete_strava_id: int) -> list[Activity]:
@@ -273,7 +278,27 @@ def weeks():
                 "computed_at": wk.summarized_at,
             }
         )
-    return render_template("weeks.html", sections=sections)
+    return render_template(
+        "weeks.html",
+        sections=sections,
+        can_recalculate_weeks=_can_perform_app_developer_tasks(athlete),
+    )
+
+
+@bp.post("/organiser/weeks/<int:week_id>/recalculate")
+def week_recalculate(week_id: int):
+    athlete = g.current_athlete
+    if not _can_perform_app_developer_tasks(athlete):
+        abort(403)
+    week = db.session.get(Week, week_id)
+    if week is None:
+        abort(404)
+    try:
+        recalculate_week_scores(current_app, week)
+    except ValueError:
+        abort(400)
+    db.session.commit()
+    return redirect(url_for("main.weeks", _anchor=f"week-heading-{week.id}"))
 
 
 @bp.get("/athletes")
