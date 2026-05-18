@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Move {{ viewed_name }}{% endblock %}
+{% block content %}
+  <p class="athlete-activities-back">
+    <a href="{{ url_for('main.athlete_activities', athlete_id=viewed_athlete_id) }}">
+      ← {{ viewed_name }}
+    </a>
+  </p>
+  <h1>Move athlete</h1>
+  <p class="muted">Change hub and department for {{ viewed_name }}.</p>
+  <form
+    class="hub-dept-form"
+    method="post"
+    action="{{ url_for('main.athletes_move_hub_department', athlete_pk=viewed_athlete_id) }}"
+  >
+    {% include "_hub_department_fields.html" %}
+    <div>
+      <button type="submit">Save</button>
+    </div>
+  </form>
+{% endblock %}

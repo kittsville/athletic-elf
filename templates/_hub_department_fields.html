@@ -1,0 +1,18 @@
+<label for="hub">Hub</label>
+<select id="hub" name="hub" required>
+  {% if not selected_hub %}
+    <option value="" disabled selected>Select a hub</option>
+  {% endif %}
+  {% for h in hub_options %}
+    <option value="{{ h }}"{% if selected_hub == h %} selected{% endif %}>{{ h }}</option>
+  {% endfor %}
+</select>
+<label for="department">Department</label>
+<select id="department" name="department" required>
+  {% if not selected_department %}
+    <option value="" disabled selected>Select a department</option>
+  {% endif %}
+  {% for d in department_options %}
+    <option value="{{ d }}"{% if selected_department == d %} selected{% endif %}>{{ d }}</option>
+  {% endfor %}
+</select>
