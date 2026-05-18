@@ -293,7 +293,7 @@ time {
 
 .btn {
   font: inherit;
-  padding: 0.75em;
+  padding: 0.35rem 0.65rem;
   cursor: pointer;
 }
 
