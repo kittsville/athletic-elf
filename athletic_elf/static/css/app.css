@@ -160,7 +160,7 @@ main.page {
   max-width: none;
 }
 
-main.page a {
+main.page a:not(.btn) {
   color: #06c;
 }
 
