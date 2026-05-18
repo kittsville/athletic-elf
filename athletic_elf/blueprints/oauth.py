@@ -104,7 +104,7 @@ def oauth_callback():
             )
 
         if cfg["BLOCK_SIGNUPS"]:
-            return "New athlete registration is currently disabled.", 403
+            return "New sign-ups are not open.", 403
 
         row = Athlete(
             athlete_id=aid,

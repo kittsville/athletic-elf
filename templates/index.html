@@ -39,12 +39,8 @@
       </p>
     </section>
   {% else %}
-    <p>You are not signed in</p>
     {% if block_signups %}
-      <p class="muted">
-        New athlete registration is currently disabled. If you already joined the competition,
-        you can still sign in below.
-      </p>
+      <p class="muted">Already joined? Sign in below.</p>
     {% endif %}
     <p class="strava-connect">
       <a href="{{ url_for('oauth.oauth_start') }}">

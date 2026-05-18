@@ -77,7 +77,7 @@ class TestOAuthCallback(unittest.TestCase):
             },
         )
         self.assertEqual(rv.status_code, 403)
-        self.assertIn(b"disabled", rv.data.lower())
+        self.assertIn(b"not open", rv.data.lower())
 
         with app.app_context():
             self.assertIsNone(Athlete.query.filter_by(athlete_id=424242).first())

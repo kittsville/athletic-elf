@@ -66,7 +66,7 @@ class TestSettingsMcpKey(unittest.TestCase):
 
         r2 = self.client.get("/settings", follow_redirects=True)
         self.assertEqual(r2.status_code, 200)
-        self.assertIn(b"You are not signed in", r2.data)
+        self.assertIn(b"Connect with Strava", r2.data)
 
     def test_get_settings_when_logged_in(self):
         _aid, token = self._make_athlete()
