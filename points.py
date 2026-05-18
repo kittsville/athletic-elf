@@ -27,6 +27,7 @@ _SCORE_HARD_FITNESS = frozenset(
         "Basketball",
         "Pilates",
         "Padel",
+        "Volleyball",
     }
 )
 # Table types intersected with Strava sport_type enum (Stretching etc. omitted)
@@ -37,7 +38,6 @@ _SCORE_EASY_FITNESS = frozenset(
         "Windsurf",
         "Kitesurf",
         "Sail",
-        "Volleyball",
         "Cricket",
         "Badminton",
         "Dance",
