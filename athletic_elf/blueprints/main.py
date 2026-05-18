@@ -123,6 +123,23 @@ def index():
     )
 
 
+def _hub_department_from_form() -> tuple[str, str] | None:
+    hubs = current_app.config["HUB_OPTIONS"]
+    departments = current_app.config["DEPARTMENT_OPTIONS"]
+    hub = (request.form.get("hub") or "").strip()
+    department = (request.form.get("department") or "").strip()
+    if hub not in hubs or department not in departments:
+        return None
+    return hub, department
+
+
+def _athlete_managed_by_organiser(target: Athlete) -> bool:
+    return not (
+        target.is_organiser
+        or int(target.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
+    )
+
+
 @bp.route("/form", methods=["GET", "POST"])
 def hub_department_form():
     athlete = g.current_athlete
@@ -141,10 +158,10 @@ def hub_department_form():
     if athlete_hub_department_complete(athlete.hub, athlete.department):
         abort(400)
 
-    hub = (request.form.get("hub") or "").strip()
-    department = (request.form.get("department") or "").strip()
-    if hub not in hubs or department not in departments:
+    parsed = _hub_department_from_form()
+    if parsed is None:
         abort(400)
+    hub, department = parsed
 
     athlete.hub = hub
     athlete.department = department
@@ -471,6 +488,46 @@ def athletes_make_inactive(athlete_pk: int):
     ):
         abort(403)
     target.is_active = False
+    db.session.commit()
+    return redirect(url_for("main.athlete_activities", athlete_id=athlete_pk))
+
+
+@bp.route("/athletes/<int:athlete_pk>/move", methods=["GET", "POST"])
+def athletes_move_hub_department(athlete_pk: int):
+    actor = g.current_athlete
+    if not _can_perform_organiser_tasks(actor):
+        abort(403)
+    target = db.session.get(Athlete, athlete_pk)
+    if target is None:
+        abort(404)
+    if not _athlete_managed_by_organiser(target):
+        abort(403)
+
+    hubs = current_app.config["HUB_OPTIONS"]
+    departments = current_app.config["DEPARTMENT_OPTIONS"]
+    viewed_name = athlete_display_name(target.firstname or "", target.lastname or "")
+
+    if request.method == "GET":
+        selected_hub = target.hub if target.hub in hubs else None
+        selected_department = (
+            target.department if target.department in departments else None
+        )
+        return render_template(
+            "athlete_hub_department.html",
+            viewed_athlete_id=athlete_pk,
+            viewed_name=viewed_name,
+            hub_options=hubs,
+            department_options=departments,
+            selected_hub=selected_hub,
+            selected_department=selected_department,
+        )
+
+    parsed = _hub_department_from_form()
+    if parsed is None:
+        abort(400)
+    hub, department = parsed
+    target.hub = hub
+    target.department = department
     db.session.commit()
     return redirect(url_for("main.athlete_activities", athlete_id=athlete_pk))
 

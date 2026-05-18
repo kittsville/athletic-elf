@@ -29,6 +29,10 @@
           <button type="submit" class="btn">Make Inactive</button>
         </form>
       {% endif %}
+      <a
+        class="btn"
+        href="{{ url_for('main.athletes_move_hub_department', athlete_pk=viewed_athlete_id) }}"
+      >Move</a>
     {% endif %}
     <form
       method="post"

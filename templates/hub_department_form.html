@@ -5,20 +5,7 @@
   <h1>{{ config.APP_NAME }}</h1>
   <p>Please select your Hub and Department</p>
   <form class="hub-dept-form" method="post" action="{{ url_for('main.hub_department_form') }}">
-    <label for="hub">Hub</label>
-    <select id="hub" name="hub" required>
-      <option value="" disabled selected>Select a hub</option>
-      {% for h in hub_options %}
-        <option value="{{ h }}">{{ h }}</option>
-      {% endfor %}
-    </select>
-    <label for="department">Department</label>
-    <select id="department" name="department" required>
-      <option value="" disabled selected>Select a department</option>
-      {% for d in department_options %}
-        <option value="{{ d }}">{{ d }}</option>
-      {% endfor %}
-    </select>
+    {% include "_hub_department_fields.html" %}
     <div>
       <button type="submit">Submit</button>
     </div>

@@ -202,6 +202,124 @@ class TestAthletesMakeInactive(unittest.TestCase):
         self.assertEqual(rv.status_code, 403)
 
 
+class TestAthletesMoveHubDepartment(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app(_TestHubDeptConfig)
+        self.app.config["TESTING"] = True
+        self.app.config["APP_DEVELOPER_IDS"] = frozenset()
+        self.client = self.app.test_client()
+
+    def _login(self, token: str) -> None:
+        with self.client.session_transaction() as sess:
+            sess[BROWSER_TOKEN_SESSION_KEY] = token
+
+    def _seed(self) -> tuple[str, int]:
+        with self.app.app_context():
+            organiser = Athlete(
+                athlete_id=931_101,
+                firstname="Org",
+                lastname="One",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+                is_organiser=True,
+            )
+            target = Athlete(
+                athlete_id=931_102,
+                firstname="Tar",
+                lastname="Get",
+                access_token="at2",
+                refresh_token="rt2",
+                expires_at=2_000_000_000,
+                hub="South Hub",
+                department="Sales",
+            )
+            db.session.add_all([organiser, target])
+            db.session.flush()
+            raw, _ = create_browser_session(int(organiser.athlete_id))
+            db.session.commit()
+            return raw, int(target.athlete_id)
+
+    def test_get_form_prefills_current_hub_department(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.get(f"/athletes/{target_pk}/move")
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn(b"Move athlete", rv.data)
+        self.assertIn(b'South Hub" selected', rv.data)
+        self.assertIn(b'Sales" selected', rv.data)
+
+    def test_overview_includes_move_link(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.get(f"/athletes/{target_pk}")
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn(b">Move</a>", rv.data)
+        self.assertIn(f"/athletes/{target_pk}/move".encode(), rv.data)
+
+    def test_post_updates_and_redirects(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.post(
+            f"/athletes/{target_pk}/move",
+            data={"hub": "East Hub", "department": "Marketing"},
+            follow_redirects=False,
+        )
+        self.assertEqual(rv.status_code, 302)
+        self.assertTrue(rv.location.endswith(f"/athletes/{target_pk}"))
+        with self.app.app_context():
+            row = Athlete.query.filter_by(athlete_id=target_pk).one()
+            self.assertEqual(row.hub, "East Hub")
+            self.assertEqual(row.department, "Marketing")
+
+    def test_non_organiser_forbidden(self):
+        with self.app.app_context():
+            u = Athlete(
+                athlete_id=931_110,
+                firstname="P",
+                lastname="eer",
+                access_token="at",
+                refresh_token="rt",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+            )
+            victim = Athlete(
+                athlete_id=931_111,
+                firstname="V",
+                lastname="ic",
+                access_token="at3",
+                refresh_token="rt3",
+                expires_at=2_000_000_000,
+                hub="North Hub",
+                department="Engineering",
+            )
+            db.session.add_all([u, victim])
+            db.session.flush()
+            raw, _ = create_browser_session(int(u.athlete_id))
+            db.session.commit()
+        self._login(raw)
+        rv = self.client.get("/athletes/931111/move")
+        self.assertEqual(rv.status_code, 403)
+
+    def test_cannot_move_organiser_target(self):
+        token, _ = self._seed()
+        self._login(token)
+        rv = self.client.get("/athletes/931101/move")
+        self.assertEqual(rv.status_code, 403)
+
+    def test_post_400_invalid_option(self):
+        token, target_pk = self._seed()
+        self._login(token)
+        rv = self.client.post(
+            f"/athletes/{target_pk}/move",
+            data={"hub": "Not A Real Hub", "department": "Sales"},
+        )
+        self.assertEqual(rv.status_code, 400)
+
+
 class TestAthletesDelete(unittest.TestCase):
     def setUp(self):
         self.app = create_app(_TestHubDeptConfig)

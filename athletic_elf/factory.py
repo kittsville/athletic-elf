@@ -167,6 +167,7 @@ def create_app(config_class: type = Config) -> Flask:
             "main.athlete_activities",
             "main.athletes_make_organiser",
             "main.athletes_make_inactive",
+            "main.athletes_move_hub_department",
             "main.athletes_delete",
             "main.athletes_resync_activities",
             "main.bonuses",

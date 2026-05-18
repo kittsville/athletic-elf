@@ -297,6 +297,15 @@ time {
   cursor: pointer;
 }
 
+a.btn {
+  display: inline-block;
+  text-decoration: none;
+  color: inherit;
+  background: buttonface;
+  border: 1px solid buttonborder;
+  border-radius: 2px;
+}
+
 .table-rows td.actions-cell,
 .athlete-actions.actions-cell {
   display: flex;
