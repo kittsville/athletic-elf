@@ -414,10 +414,14 @@ def athlete_activities(athlete_id: int):
     team_points_val = activities_total_points(scored)
     activity_points = {a.id: activities_total_points([a]) for a in scored}
     viewed_name = athlete_display_name(target.firstname or "", target.lastname or "")
+    dev_ids = current_app.config["APP_DEVELOPER_IDS"]
     return render_template(
-        "athlete_activities.html",
+        "athlete_overview.html",
         viewed_athlete_id=athlete_id,
         viewed_name=viewed_name,
+        viewed_is_organiser=bool(target.is_organiser),
+        viewed_is_app_developer=int(target.athlete_id) in dev_ids,
+        viewed_is_active=bool(target.is_active),
         activities=activities,
         team_points=team_points_val,
         activity_points=activity_points,
@@ -450,7 +454,7 @@ def athletes_make_organiser(athlete_pk: int):
         abort(404)
     target.is_organiser = True
     db.session.commit()
-    return redirect(url_for("main.athletes"))
+    return redirect(url_for("main.athlete_activities", athlete_id=athlete_pk))
 
 
 @bp.post("/athletes/<int:athlete_pk>/make-inactive")
@@ -468,7 +472,7 @@ def athletes_make_inactive(athlete_pk: int):
         abort(403)
     target.is_active = False
     db.session.commit()
-    return redirect(url_for("main.athletes"))
+    return redirect(url_for("main.athlete_activities", athlete_id=athlete_pk))
 
 
 @bp.post("/athletes/<int:athlete_pk>/delete")
@@ -522,7 +526,7 @@ def athletes_resync_activities(athlete_pk: int):
     schedule_initial_activity_sync(
         current_app._get_current_object(), int(target.athlete_id)
     )
-    return redirect(url_for("main.athletes"))
+    return redirect(url_for("main.athlete_activities", athlete_id=athlete_pk))
 
 
 def _bonuses_table_rows() -> list[dict[str, object]]:

@@ -157,7 +157,7 @@ class TestAthletesMakeInactive(unittest.TestCase):
             follow_redirects=False,
         )
         self.assertEqual(rv.status_code, 302)
-        self.assertTrue(rv.location.endswith("/athletes"))
+        self.assertTrue(rv.location.endswith(f"/athletes/{target_pk}"))
         with self.app.app_context():
             row = Athlete.query.filter_by(athlete_id=target_pk).one()
             self.assertFalse(row.is_active)
@@ -521,7 +521,7 @@ class TestAthletesResyncActivities(unittest.TestCase):
                 follow_redirects=False,
             )
         self.assertEqual(rv.status_code, 302)
-        self.assertTrue(rv.location.endswith("/athletes"))
+        self.assertTrue(rv.location.endswith(f"/athletes/{target_pk}"))
         mock_sync.assert_called_once()
         args = mock_sync.call_args[0]
         self.assertIs(args[0], self.app)

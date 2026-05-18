@@ -297,15 +297,22 @@ time {
   cursor: pointer;
 }
 
-.table-rows td.actions-cell {
+.table-rows td.actions-cell,
+.athlete-actions.actions-cell {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
   align-items: center;
 }
 
-.table-rows td.actions-cell form {
+.table-rows td.actions-cell form,
+.athlete-actions.actions-cell form {
   margin: 0;
+}
+
+.athlete-actions.actions-cell {
+  margin-top: 1.5rem;
+  max-width: 48rem;
 }
 
 .athletes-filters {

@@ -1,13 +1,5 @@
 {% extends "base.html" %}
 {% block title %}All athletes{% endblock %}
-{% block extra_head %}
-<link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-  crossorigin="anonymous"
-  referrerpolicy="no-referrer"
-/>
-{% endblock %}
 {% block content %}
   <h1>All athletes</h1>
   <nav class="athletes-filters" aria-label="Filter athletes list">
@@ -44,7 +36,6 @@
         <th class="table-sort"{% if athletes_sort == "role" %} aria-sort="{{ 'descending' if athletes_order == 'desc' else 'ascending' }}"{% endif %}>
           <a href="{{ url_for('main.athletes', filter=athletes_filter, sort='role', order=('desc' if athletes_sort == 'role' and athletes_order == 'asc' else 'asc')) }}">Role</a>{% if athletes_sort == "role" %} <span class="table-sort-indicator" aria-hidden="true">{{ "↑" if athletes_order == "asc" else "↓" }}</span>{% endif %}
         </th>
-        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -56,64 +47,6 @@
         <td>{{ row.department }}</td>
         <td>{{ "%.2f"|format(row.score) }}</td>
         <td>{{ athlete_role_label(row.is_app_developer, row.is_organiser, row.is_active) }}</td>
-        <td class="actions-cell">
-          {% set can_manage_role = not (row.is_organiser or row.is_app_developer) %}
-          {% if can_manage_role %}
-            <form
-              method="post"
-              action="{{ url_for('main.athletes_make_organiser', athlete_pk=row.athlete_pk) }}"
-            >
-              <button type="submit" class="btn">Make Organiser</button>
-            </form>
-            {% if row.is_active %}
-              <form
-                method="post"
-                action="{{ url_for('main.athletes_make_inactive', athlete_pk=row.athlete_pk) }}"
-              >
-                <button type="submit" class="btn">Make Inactive</button>
-              </form>
-            {% endif %}
-          {% endif %}
-          <form
-            method="post"
-            action="{{ url_for('main.athletes_resync_activities', athlete_pk=row.athlete_pk) }}"
-          >
-            <button type="submit" class="btn" aria-label="Re-import activities" title="Re-import activities">
-              <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
-            </button>
-          </form>
-          {% if can_manage_role %}
-            <form
-              method="post"
-              action="{{ url_for('main.athletes_delete', athlete_pk=row.athlete_pk) }}"
-              onsubmit="return confirm('Delete this athlete? This cannot be undone.');"
-            >
-              <button
-                type="submit"
-                class="btn"
-                aria-label="Delete athlete"
-                title="Delete athlete"
-              >
-                <i class="fa-solid fa-trash" aria-hidden="true"></i>
-              </button>
-            </form>
-            <form
-              method="post"
-              action="{{ url_for('main.athletes_delete', athlete_pk=row.athlete_pk) }}"
-              onsubmit="return confirm('Ban this athlete? They will be blocked from re-registering.');"
-            >
-              <input type="hidden" name="ban" value="1">
-              <button
-                type="submit"
-                class="btn"
-                aria-label="Ban athlete"
-                title="Ban athlete"
-              >
-                <i class="fa-solid fa-ban" aria-hidden="true"></i>
-              </button>
-            </form>
-          {% endif %}
-        </td>
       </tr>
     {% endfor %}
     </tbody>
