@@ -223,6 +223,7 @@ class TestEasyFitnessRow(unittest.TestCase):
             "Kitesurf",
             "Sail",
             "Volleyball",
+            "Dance",
         )
         for sport_type in sports:
             with self.subTest(sport_type=sport_type, rule="30min_one_point"):
