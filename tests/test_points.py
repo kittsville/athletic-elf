@@ -190,6 +190,7 @@ class TestHardFitnessRow(unittest.TestCase):
             "Basketball",
             "Pilates",
             "Padel",
+            "Volleyball",
         )
         moving_time = 15 * 60
         for sport_type in sports:
@@ -222,7 +223,6 @@ class TestEasyFitnessRow(unittest.TestCase):
             "Windsurf",
             "Kitesurf",
             "Sail",
-            "Volleyball",
             "Dance",
         )
         for sport_type in sports:
