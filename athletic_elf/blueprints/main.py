@@ -40,6 +40,7 @@ from ..models import (
     WeekScore,
 )
 from ..session import BROWSER_TOKEN_SESSION_KEY, hash_session_token
+from ..strava_service import deauthorize_athlete
 from ..team_scoring import summaries_by_hub_and_department
 from ..utils import (
     athlete_display_name,
@@ -545,6 +546,7 @@ def athletes_delete(athlete_pk: int):
         or int(target.athlete_id) in current_app.config["APP_DEVELOPER_IDS"]
     ):
         abort(403)
+    deauthorize_athlete(target)
     want_ban = (request.form.get("ban") or "").strip() == "1"
     if want_ban:
         db.session.add(

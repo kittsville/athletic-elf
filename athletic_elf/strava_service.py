@@ -210,6 +210,34 @@ def ensure_push_subscription():
     return new_id
 
 
+def deauthorize_athlete(athlete: Athlete) -> None:
+    """
+    Revoke this app's access to the athlete's Strava data.
+
+    Logs and returns on 401 (token already invalid). Raises on other HTTP errors.
+    """
+    cfg = current_app.config
+    maybe_refresh_athlete_token(athlete)
+    r = http_client.post(
+        cfg["STRAVA_OAUTH_DEAUTHORIZE"],
+        params={"access_token": athlete.access_token},
+        timeout=30,
+    )
+    if r.status_code == 401:
+        current_app.logger.warning(
+            "Strava deauthorize returned 401 for athlete_id=%s; continuing",
+            athlete.athlete_id,
+        )
+        return
+    if not r.ok:
+        current_app.logger.error(
+            "Strava deauthorize failed for athlete_id=%s http_status=%s",
+            athlete.athlete_id,
+            r.status_code,
+        )
+        r.raise_for_status()
+
+
 def maybe_refresh_athlete_token(athlete: Athlete) -> bool:
     cfg = current_app.config
     now = int(datetime.now(timezone.utc).timestamp())

@@ -2,7 +2,7 @@
 
 import unittest
 from datetime import datetime, timezone
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from athletic_elf.extensions import db
 from athletic_elf.factory import create_app
@@ -326,6 +326,14 @@ class TestAthletesDelete(unittest.TestCase):
         self.app.config["TESTING"] = True
         self.app.config["APP_DEVELOPER_IDS"] = frozenset()
         self.client = self.app.test_client()
+        self.deauth_patcher = patch(
+            "athletic_elf.blueprints.main.deauthorize_athlete",
+            autospec=True,
+        )
+        self.mock_deauth = self.deauth_patcher.start()
+
+    def tearDown(self):
+        self.deauth_patcher.stop()
 
     def _login(self, token: str) -> None:
         with self.client.session_transaction() as sess:
@@ -379,6 +387,29 @@ class TestAthletesDelete(unittest.TestCase):
         )
         self.assertEqual(rv.status_code, 302)
         self.assertTrue(rv.location.endswith("/athletes"))
+        with self.app.app_context():
+            self.assertIsNone(db.session.get(Athlete, target_pk))
+        self.mock_deauth.assert_called_once()
+
+    def test_delete_continues_when_strava_returns_401(self):
+        from athletic_elf.strava_service import deauthorize_athlete as real_deauth
+
+        token, target_pk = self._seed()
+        resp = MagicMock()
+        resp.status_code = 401
+        resp.ok = False
+        with patch(
+            "athletic_elf.strava_service.http_client.post",
+            autospec=True,
+            return_value=resp,
+        ):
+            self.mock_deauth.side_effect = real_deauth
+            self._login(token)
+            rv = self.client.post(
+                f"/athletes/{target_pk}/delete",
+                follow_redirects=False,
+            )
+        self.assertEqual(rv.status_code, 302)
         with self.app.app_context():
             self.assertIsNone(db.session.get(Athlete, target_pk))
 
@@ -520,6 +551,14 @@ class TestAthletesBanDelete(unittest.TestCase):
         self.app.config["TESTING"] = True
         self.app.config["APP_DEVELOPER_IDS"] = frozenset()
         self.client = self.app.test_client()
+        self.deauth_patcher = patch(
+            "athletic_elf.blueprints.main.deauthorize_athlete",
+            autospec=True,
+        )
+        self.deauth_patcher.start()
+
+    def tearDown(self):
+        self.deauth_patcher.stop()
 
     def _login(self, token: str) -> None:
         with self.client.session_transaction() as sess:

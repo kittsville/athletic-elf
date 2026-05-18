@@ -155,6 +155,7 @@ class Config:
     STRAVA_API_BASE = "https://www.strava.com/api/v3"
     STRAVA_OAUTH_AUTHORIZE = "https://www.strava.com/oauth/authorize"
     STRAVA_OAUTH_TOKEN = "https://www.strava.com/oauth/token"
+    STRAVA_OAUTH_DEAUTHORIZE = "https://www.strava.com/oauth/deauthorize"
     OAUTH_SCOPES = "read,activity:read_all,profile:read_all"
 
     SESSION_TTL = timedelta(hours=48)
