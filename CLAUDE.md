@@ -31,11 +31,11 @@ Postgres comes from `docker-compose.yml` (`docker compose up -d`). Strava needs 
 ## Architecture
 
 ### Entry points
-- `asgi:app` — combined ASGI app (Flask WSGI + FastMCP Streamable HTTP). Used by `Procfile` (`gunicorn -k uvicorn.workers.UvicornWorker asgi:app`) and by `python app.py` (boots uvicorn on `PORT`).
-- `app:app` — the bare Flask WSGI app. Used by `flask --app app init-db` release job.
+- `asgi:app` — combined ASGI app (Flask WSGI + FastMCP Streamable HTTP). Used by the production start command (`gunicorn -k uvicorn.workers.UvicornWorker asgi:app` in `Procfile`) and by `python app.py` (boots uvicorn on `PORT`).
+- `app:app` — the bare Flask WSGI app. Used by `flask --app app init-db` (deploy/release step).
 
 ### Flask application factory (`athletic_elf/factory.py`)
-`create_app` validates config strictly at startup (VERIFY_TOKEN non-empty; competition schedule produces ≥1 scoring period), mutates config keys in place (e.g. `COMPETITION_START_DATETIME` string → aware UTC `datetime`), and registers four blueprints: `main`, `cron`, `oauth`, `webhook`. Two `before_request` hooks do (a) HTTPS enforcement when `ENFORCE_HTTPS` (trusts `X-Forwarded-Proto`) and (b) browser-session lookup that populates `g.current_athlete` and redirects to `/` for endpoints in `endpoints_requiring_session`. Webhook and cron endpoints are listed in `endpoints_skip_session_lookup` so they never trigger session DB reads. A Flask CLI command `flask --app app init-db` creates tables (Procfile `release`), since `AUTO_CREATE_TABLES` defaults to `False` in production to avoid multiple workers racing on DDL.
+`create_app` validates config strictly at startup (VERIFY_TOKEN non-empty; competition schedule produces ≥1 scoring period), mutates config keys in place (e.g. `COMPETITION_START_DATETIME` string → aware UTC `datetime`), and registers four blueprints: `main`, `cron`, `oauth`, `webhook`. Two `before_request` hooks do (a) HTTPS enforcement when `ENFORCE_HTTPS` (trusts `X-Forwarded-Proto`) and (b) browser-session lookup that populates `g.current_athlete` and redirects to `/` for endpoints in `endpoints_requiring_session`. Webhook and cron endpoints are listed in `endpoints_skip_session_lookup` so they never trigger session DB reads. A Flask CLI command `flask --app app init-db` creates tables (run once per deploy / release step), since `AUTO_CREATE_TABLES` defaults to `False` in production to avoid multiple workers racing on DDL.
 
 ### Strava integration
 - **OAuth** (`blueprints/oauth.py`): `/oauth/start` → Strava → `/oauth/callback` stores tokens in `athlete`, creates a hashed `BrowserSession` row, then calls `ensure_push_subscription()` and — for first-time registrations — `schedule_initial_activity_sync` which spawns a **daemon thread** (in-process; see `background.py`). Replace with a queue for horizontal scale.

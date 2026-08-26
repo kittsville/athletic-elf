@@ -9,7 +9,7 @@ A Flask app that receives [Strava webhook events](https://developers.strava.com/
 1. An athlete opens **`GET /oauth/start`** to authorize the app. Strava redirects back to **`GET /oauth/callback`** on your **`DOMAIN`** (must match your app’s [Authorization Callback Domain](https://www.strava.com/settings/api)). Tokens and profile are saved in the **`athlete`** table.
 2. On the first successful registration for your Strava application, the app creates a [push subscription](https://developers.strava.com/docs/webhooks/) with callback URL **`{DOMAIN}/webhook/{VERIFY_TOKEN}`** (the token is URL-encoded in the path). Strava allows **only one subscription per application**. Each event includes **`owner_id`**, which is stored on new **`activity`** rows. **`VERIFY_TOKEN`** is required for the app to start (there is no default).
 3. For new activities, a row is inserted into **`activity`** with **`activity_id`** and **`owner_id`** as **`athlete_id`** (pending enrichment).
-4. **`POST /cron`** (with **`Authorization: Bearer`** matching **`CRON_SECRET`**) responds immediately, then processes up to 50 rows still missing **`start_date`** in the background (session cleanup runs there too). On Heroku, use [Scheduler](https://devcenter.heroku.com/articles/scheduler) at **every 10 minutes** (its finest interval) with a **`curl`** that sends that header.
+4. **`POST /cron`** (with **`Authorization: Bearer`** matching **`CRON_SECRET`**) responds immediately, then processes up to 50 rows still missing **`start_date`** in the background (session cleanup runs there too). In production, schedule a job every ~10 minutes (e.g. Coolify scheduled task) that **`curl`**s that endpoint with the bearer header.
 5. When an activity is deleted, the corresponding **`activity`** row is removed. Athlete deauthorization (`object_type: athlete`, `authorized: false`) removes the **`athlete`** row.
 
 ## Setup
@@ -74,7 +74,7 @@ Set up some of the values before starting the app. An explanation of their purpo
 
 \*Required for OAuth and webhook registration; the app will return 500 from **`/oauth/start`** if they are missing.
 
-†Set **`CRON_SECRET`** in production when using **`POST /cron`** (e.g. Heroku Scheduler job: `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$DOMAIN/cron"` with **`CRON_SECRET`** and **`DOMAIN`** configured for the app).
+†Set **`CRON_SECRET`** in production when using **`POST /cron`** (e.g. Coolify scheduled task: `curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" "$DOMAIN/cron"` with **`CRON_SECRET`** and **`DOMAIN`** configured for the app).
 
 The app process will not start unless **`VERIFY_TOKEN`** is set ( **`create_app`** raises **`ValueError`** if it is missing or blank).
 
