@@ -45,4 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Coolify Deployment
-        run: curl -fsS -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" "${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}"
+        run: >
+          curl -fsS -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}"
+          "${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}"
