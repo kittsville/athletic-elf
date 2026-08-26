@@ -80,6 +80,8 @@ The app process will not start unless **`VERIFY_TOKEN`** is set ( **`create_app`
 
 The app always sets **`SESSION_COOKIE_SAMESITE = "Lax"`**. After loading config, **`create_app`** sets **`SESSION_COOKIE_SECURE`** from **`ENFORCE_HTTPS`** so session cookies are only sent over TLS when HTTPS is enforced.
 
+If the public hostname is on Cloudflare, keep **SSL/TLS mode at Full (Strict)** when pointing DNS at Coolify (or any HTTPS origin). Flexible (HTTPS to visitors, HTTP to origin) causes a redirect loop with the proxy’s HTTPS redirect and with **`ENFORCE_HTTPS`**. Re-check that setting whenever you change the domain or DNS.
+
 ### ngrok
 
 To run the app locally Strava needs a public URL to send the webhook events to. So install ngrok/tailscale/whatever:

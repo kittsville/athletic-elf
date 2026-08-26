@@ -49,8 +49,8 @@
   </main>
   <footer class="app-footer" role="contentinfo">
     <p class="app-footer-text">
-      {% if config.HEROKU_BUILD_COMMIT %}
-      <a href="https://github.com/kittsville/athletic-elf/commit/{{ config.HEROKU_BUILD_COMMIT }}">v{{ config.HEROKU_BUILD_COMMIT[:8] }}</a> deployed (<a href="https://github.com/kittsville/athletic-elf">source code</a>). Contributions welcome!
+      {% if config.BUILD_COMMIT %}
+      <a href="https://github.com/kittsville/athletic-elf/commit/{{ config.BUILD_COMMIT }}">v{{ config.BUILD_COMMIT[:8] }}</a> deployed (<a href="https://github.com/kittsville/athletic-elf">source code</a>). Contributions welcome!
       {% else %}
       (local development version)
       {% endif %}

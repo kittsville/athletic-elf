@@ -130,8 +130,8 @@ class Config:
     # Branding (optional favicon URL; name defaults for page titles/headings).
     APP_NAME = os.getenv("APP_NAME", "Athletic Elf").strip() or "Athletic Elf"
     APP_FAVICON = os.getenv("APP_FAVICON", "").strip() or None
-    # Heroku build metadata (optional); shown in site footer when set.
-    HEROKU_BUILD_COMMIT = os.getenv("HEROKU_BUILD_COMMIT", "").strip() or None
+    # Coolify SOURCE_COMMIT (optional); shown in site footer when set.
+    BUILD_COMMIT = os.getenv("SOURCE_COMMIT", "").strip() or None
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
     ).replace("postgres://", "postgresql://")
@@ -150,6 +150,8 @@ class Config:
     CRON_SECRET = (os.getenv("CRON_SECRET", "") or "").strip() or None
     CLIENT_ID = os.getenv("CLIENT_ID")
     CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+    # Public base URL for OAuth + webhooks. Locally set in .env (e.g. ngrok);
+    # on Coolify prefer DOMAIN=$COOLIFY_URL (must resolve to a single URL).
     DOMAIN = os.getenv("DOMAIN")
 
     STRAVA_API_BASE = "https://www.strava.com/api/v3"

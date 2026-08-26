@@ -30,6 +30,22 @@ from .session import current_athlete_from_request
 from .utils import athlete_role_label, format_moving_time
 
 
+def _require_single_domain(app: Flask) -> None:
+    """DOMAIN must be a single public base URL (OAuth redirect + Strava webhook callback)."""
+    domain = app.config.get("DOMAIN")
+    if domain is None:
+        return
+    domain_str = str(domain).strip()
+    if not domain_str:
+        return
+    if "," in domain_str:
+        raise ValueError(
+            "DOMAIN must be a single URL, not a comma-separated list. "
+            "Coolify's COOLIFY_URL can list multiple domains when several are configured; "
+            "set DOMAIN to one public base URL (or map DOMAIN=$COOLIFY_URL with only one domain)."
+        )
+
+
 def _require_competition_schedule(app: Flask) -> None:
     """Weekly hub/department scoring requires a valid competition window (see competition_periods)."""
     start = app.config.get("COMPETITION_START_DATETIME")
@@ -88,6 +104,7 @@ def create_app(config_class: type = Config) -> Flask:
             "VERIFY_TOKEN must be set (environment variable or on the Flask Config class). "
             "It is used for Strava subscription validation and the webhook URL path."
         )
+    _require_single_domain(app)
     app.config["SESSION_COOKIE_SECURE"] = bool(app.config.get("ENFORCE_HTTPS"))
     app.config["APP_DEVELOPER_IDS"] = parse_app_developer_ids()
     start_raw = app.config.get("COMPETITION_START_DATETIME")
