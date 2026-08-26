@@ -10,6 +10,9 @@ build/
 venv/
 env/
 .env
+prod.env
+secrets.html
+970444f2-7483-4a47-96d4-d57ab246eb36
 *.log
 .mypy_cache/
 .ruff_cache/

@@ -33,10 +33,18 @@ class TestHttpsEnforcement(unittest.TestCase):
 
     def test_http_request_returns_403_plain_text(self):
         client = self.app.test_client()
-        r = client.get("/", base_url="http://127.0.0.1/")
+        r = client.get("/", base_url="http://example.com/")
         self.assertEqual(r.status_code, 403)
         self.assertEqual(r.mimetype, "text/plain")
         self.assertIn("HTTPS", r.get_data(as_text=True))
+
+    def test_localhost_http_healthcheck_allowed(self):
+        """Container probes (Coolify) use Host: localhost over plain HTTP."""
+        client = self.app.test_client()
+        for base in ("http://localhost/", "http://127.0.0.1/"):
+            with self.subTest(base=base):
+                r = client.get("/", base_url=base)
+                self.assertNotEqual(r.status_code, 403)
 
     def test_https_request_allowed(self):
         client = self.app.test_client()
@@ -47,7 +55,7 @@ class TestHttpsEnforcement(unittest.TestCase):
         client = self.app.test_client()
         r = client.get(
             "/",
-            base_url="http://127.0.0.1/",
+            base_url="http://example.com/",
             headers={"X-Forwarded-Proto": "https"},
         )
         self.assertNotEqual(r.status_code, 403)

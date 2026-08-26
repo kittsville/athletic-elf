@@ -186,6 +186,11 @@ def create_app(config_class: type = Config) -> Flask:
             return None
         if _request_is_https():
             return None
+        # Coolify/Docker probe the container over plain HTTP on localhost.
+        # Public traffic still hits the proxy with X-Forwarded-Proto: https.
+        host = (request.host or "").split(":")[0].lower()
+        if host in {"localhost", "127.0.0.1", "::1"}:
+            return None
         return Response(
             "This site must be accessed via HTTPS.\n",
             status=403,

@@ -38,3 +38,11 @@ jobs:
 
       - name: Run tests
         run: python -m unittest discover -s tests -v
+
+  deploy:
+    needs: [format, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Coolify Deployment
+        run: curl -fsS -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" "${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}"
