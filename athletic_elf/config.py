@@ -34,6 +34,24 @@ def parse_oauth_scopes_csv(raw: str | None) -> frozenset[str]:
     return frozenset(p.strip() for p in raw.split(",") if p.strip())
 
 
+def sqlalchemy_database_uri(raw: str | None = None) -> str:
+    """Normalize DATABASE_URL onto the psycopg2 dialect this app installs.
+
+    Coolify emits ``postgres://``. SQLAlchemy 2.1 loads psycopg 3 for a bare
+    ``postgresql://`` URL; ``psycopg2-binary`` does not provide that module.
+    URLs that already name a driver are left unchanged.
+    """
+    if raw is None:
+        raw = os.environ.get(
+            "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
+        )
+    if raw.startswith("postgres://"):
+        raw = "postgresql://" + raw[len("postgres://") :]
+    if raw.startswith("postgresql://"):
+        raw = "postgresql+psycopg2://" + raw[len("postgresql://") :]
+    return raw
+
+
 def parse_datetime_utc(iso_value: str | None) -> datetime | None:
     """
     Parse ISO 8601 datetime or date-only string into an aware UTC datetime.
@@ -132,9 +150,7 @@ class Config:
     APP_FAVICON = os.getenv("APP_FAVICON", "").strip() or None
     # Coolify SOURCE_COMMIT (optional); shown in site footer when set.
     BUILD_COMMIT = os.getenv("SOURCE_COMMIT", "").strip() or None
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", "postgresql://strava:strava@localhost:5432/strava"
-    ).replace("postgres://", "postgresql://")
+    SQLALCHEMY_DATABASE_URI = sqlalchemy_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # When true, create_app() calls db.create_all(). Disabled by default in production so
     # multiple booting instances do not race on DDL; use `flask init-db` or a release job.
